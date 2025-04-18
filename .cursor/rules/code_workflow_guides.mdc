@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Coding Workflow Guidelines
+
+1. ​**Scope Focus**:
+   - Concentrate on code areas directly relevant to the task
+   - Avoid modifying unrelated code sections
+
+2. ​**Testing Standards**:
+   - Write comprehensive tests for all core functionality
+   - Validate through loop check mechanisms
+
+3. ​**Architecture Preservation**:
+   - Maintain proven patterns and architectural structures
+   - Only modify working features when explicitly instructed
+
+4. ​**Change Impact Analysis**:
+   - Consider ripple effects on other methods/systems
+   - Evaluate dependencies before implementing changes

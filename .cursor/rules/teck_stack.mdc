@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- ​**Backend**: Python, fastapi
+- ​**Frontend**: react/nextjs/tailwind/shadcn
+- ​**Database**: 
+  - postgres in supabase
+  - Separated databases for dev/test/prod environments
