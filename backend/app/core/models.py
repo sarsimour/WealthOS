@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.ext.declarative import declared_attr
 
 from app.core.database import Base
@@ -10,9 +9,7 @@ from app.core.database import Base
 class TimestampMixin:
     """Mixin for adding created_at and updated_at columns."""
 
-    created_at = Column(
-        DateTime, default=datetime.utcnow, nullable=False
-    )
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime,
         default=datetime.utcnow,

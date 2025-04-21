@@ -39,7 +39,6 @@ dev = [
 
 [tool.black]
 line-length = 88
-target-version = ["py310"]
 
 [tool.isort]
 profile = "black"
@@ -54,5 +53,31 @@ disallow_incomplete_defs = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "B", "I"]
+ignore = ["B008"]
+
+# Add specific configuration for the pycodestyle category (where E501 comes from)
+[tool.ruff.lint.pycodestyle]
+max-line-length = 88
+
+[tool.pyright]
+# Tells pyright to use the environment selected in the editor
+# This is often the most straightforward approach.
+useLibraryCodeForTypes = true
+
+# Alternatively, you can explicitly define the execution environment
+# if the above doesn't work or you need more control.
+venvPath = "." # Directory containing the virtual env (e.g., where .venv is)
+venv = ".venv" # Name of the virtual environment directory
+
+# Define the source root(s) if needed (often auto-detected)
+# include = ["app"]
+# exclude = ["**/node_modules", ...]
+
+# Report errors for missing imports (you likely already have this enabled in settings)
+reportMissingImports = true
+reportMissingModuleSource = false # Often less useful than reportMissingImports
+
+# You can adjust other settings based on pyright documentation

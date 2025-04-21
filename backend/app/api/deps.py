@@ -10,7 +10,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)  # noqa: B008
 ):
     """
     Get the current user from the token.
@@ -25,12 +25,13 @@ async def get_current_user(
             token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
+            options={"verify_aud": False},
         )
-        username: str = payload.get("sub")
-        if username is None:
+        username: str | None = payload.get("sub")
+        if username is None or not isinstance(username, str):
             raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    except JWTError as err:
+        raise credentials_exception from err
 
     # Here you would typically fetch the user from the database
     # For now, we'll just return the username
