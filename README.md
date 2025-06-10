@@ -108,4 +108,4 @@ See [development_roadmap.md](development_roadmap.md) for the project timeline an
 - [Core Components](core_components.md)
 - [Core Principles](core_principles.md)
 - [Tech Stack](tech_stack.md)
-- [Setup Guide](setup_guide.md) 
+- [Setup Guide](setup_guide.md) # Portfolio auto-update test
