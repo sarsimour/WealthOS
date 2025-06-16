@@ -1,7 +1,9 @@
+import time
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.services.price_service import get_price_provider
 from app.services.protocols import PriceProvider
-import time
 
 router = APIRouter(prefix="/price", tags=["price"])
 

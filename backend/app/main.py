@@ -8,6 +8,7 @@ except ImportError:
     print("Redis not available - caching and rate limiting will be limited")
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

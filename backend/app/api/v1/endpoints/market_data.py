@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Query
-from app.services.data_provider_service import DataProviderService
 from datetime import datetime, timedelta
+
 import pandas as pd
+from fastapi import APIRouter, Query
+
+from app.services.data_provider_service import DataProviderService
 
 router = APIRouter()
 data_provider_service = DataProviderService()
