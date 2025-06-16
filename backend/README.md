@@ -1,6 +1,34 @@
-# WealthOS Backend
+# Backend Setup
 
-Backend services for the WealthOS financial analysis and investment platform.
+This directory contains the FastAPI backend for the WealthOS application.
+
+## Environment
+
+- **Python Version**: 3.12 (as specified in rules)
+- **Package Manager**: [uv](https://github.com/astral-sh/uv)
+- **Virtual Environment**: A virtual environment managed by `uv` is expected to be active within this directory (e.g., `.venv`).
+
+## Getting Started
+
+1.  **Navigate to the backend directory**:
+    ```bash
+    cd backend
+    ```
+2.  **Activate the virtual environment**:
+    *   If using `uv`'s default `.venv`:
+        ```fish
+        source .venv/bin/activate.fish
+        ```
+        (Adjust path and shell command if your setup differs)
+3.  **Install dependencies**:
+    ```bash
+    uv pip install -r requirements.txt  # Or uv sync if using uv.lock
+    ```
+4.  **Run the application** (Details TBD - e.g., using uvicorn)
+
+## Dependencies
+
+Key dependencies are managed using `uv` and should be listed in `requirements.txt` (or `pyproject.toml` if using that structure with `uv`).
 
 ## Setup
 

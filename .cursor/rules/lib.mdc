@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1. for chinese finance market, use akshare
+2. for other, use yahoo finance
+3. for bitcoin, use binance

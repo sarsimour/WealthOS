@@ -10,7 +10,7 @@ Here are some best practices and rules you must follow:
   - pydantic
   - fastapi
   - sqlalchemy
-- You use poetry for dependency management
+- You use uv for dependency management
 - You use alembic for database migrations
 - You use fastapi-users for user management
 - You use fastapi-jwt-auth for authentication

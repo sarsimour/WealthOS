@@ -1,111 +1,123 @@
-# WealthOS
+# WealthOS v2.0 🚀
 
-WealthOS is an all-in-one platform for financial analysis and investment across multiple asset classes, with a focus on the Chinese market. The platform unifies data handling, analysis, portfolio optimization, and reporting in a cohesive ecosystem enhanced by AI capabilities.
+A modern financial analysis and investment platform with real-time Bitcoin price tracking.
 
-## Project Structure
+## 🏗️ Modern Tech Stack
 
-This repository contains both the frontend and backend components of WealthOS:
+### Frontend
+- **Vite 6.3** - Lightning fast build tool
+- **React 19** - Latest React with new features
+- **Tailwind CSS 4.1** - Latest styling framework
+- **Shadcn UI** - Modern component library
+- **TanStack React Query** - Server state management
+- **Recharts** - Beautiful charts for data visualization
+- **Zustand** - Lightweight state management
 
-- `frontend/`: Next.js application with TypeScript and Tailwind CSS
-- `backend/`: FastAPI application with Python
+### Backend
+- **Python 3.12** - Latest Python
+- **FastAPI** - Modern async API framework
+- **uv** - Fast Python package manager
+- **Binance API** - Real-time cryptocurrency data
+- **PostgreSQL** - Database (future)
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10 or higher
-- Node.js 18 or higher
-- PostgreSQL
-- Redis
-- Docker (optional)
-
-### Backend Setup
-
-1. Navigate to the backend directory:
-
-```bash
-cd backend
-```
-
-2. Create a virtual environment using `uv`:
-
-```bash
-curl -sSf https://astral.sh/uv/install.sh | bash
-uv venv .venv
-source .venv/bin/activate  # On Unix/macOS
-```
-
-3. Install dependencies:
-
-```bash
-uv pip install -e ".[dev]"
-```
-
-4. Set up environment variables:
-
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. Run the development server:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The API will be available at `http://localhost:4400`.
+## 🚀 Quick Start
 
 ### Frontend Setup
-
-1. Navigate to the frontend directory:
-
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-
-```bash
 pnpm install
-```
-
-3. Set up environment variables:
-
-```bash
-cp .env.local.example .env.local
-# Edit .env.local with your configuration
-```
-
-4. Run the development server:
-
-```bash
 pnpm dev
 ```
+Frontend runs at: http://localhost:5173
 
-The application will be available at `http://localhost:4300`.
-
-## Docker Setup (Optional)
-
-You can also run the entire application using Docker Compose:
-
+### Backend Setup
 ```bash
-# Build and start all services
-docker-compose up -d
+cd backend
+source .venv/bin/activate.fish  # For Fish shell
+uv sync
+python main.py
+```
+Backend runs at: http://localhost:8000
 
-# View logs
-docker-compose logs -f
+## 📊 Features
+
+### Market Tab
+- **Real-time Bitcoin Price Chart** - Live BTC/USD pricing
+- **24h Price History** - Simulated historical data
+- **Price Statistics** - High, low, and change indicators
+- **Auto-refresh** - Updates every 30 seconds
+
+### Dashboard
+- Portfolio overview
+- Performance metrics
+- Quick stats
+
+### Portfolio
+- Asset allocation visualization
+- Transaction history
+- Rebalancing tools
+
+### Analytics
+- Performance metrics
+- Risk analysis
+- Export capabilities
+
+## 🛠️ Development
+
+### Running Both Services
+```bash
+# Terminal 1 - Backend
+cd backend && source .venv/bin/activate.fish && python main.py
+
+# Terminal 2 - Frontend  
+cd frontend && pnpm dev
 ```
 
-## Development Roadmap
+### API Endpoints
+- `GET /` - API status
+- `GET /health` - Health check
+- `GET /api/v1/price/{base_asset}/{quote_currency}` - Get price data
 
-See [development_roadmap.md](development_roadmap.md) for the project timeline and milestones.
+## 📈 Bitcoin Chart Integration
 
-## Documentation
+The Market tab features a real-time Bitcoin price chart that:
+1. Fetches live data from your WealthOS backend
+2. Displays 24h price history with beautiful line charts
+3. Shows price statistics and change indicators
+4. Auto-refreshes every 30 seconds
+5. Gracefully handles connection errors
 
-- [Project Overview](project_overview.md)
-- [Architecture](architecture.md)
-- [Core Components](core_components.md)
-- [Core Principles](core_principles.md)
-- [Tech Stack](tech_stack.md)
-- [Setup Guide](setup_guide.md) # Portfolio auto-update test
+## 🎨 Design System
+
+Built with modern design principles:
+- **Clean Interface** - Minimal and intuitive
+- **Dark/Light Mode Ready** - CSS variables for theming
+- **Responsive Design** - Mobile-first approach
+- **Smooth Animations** - Subtle hover effects and transitions
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+# Backend
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost/wealthos
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_SECRET_KEY=your_binance_secret_key
+
+# Frontend
+VITE_API_URL=http://localhost:8000
+```
+
+## 📦 Package Management
+
+- **Backend**: Use `uv` commands only (never `pip`)
+- **Frontend**: Use `pnpm` for all package operations
+
+## 🚦 Status
+
+✅ Frontend: Modern Vite + React 19 + Tailwind CSS 4.1  
+✅ Backend: FastAPI with Bitcoin price API  
+✅ Bitcoin Chart: Real-time data visualization  
+✅ CORS: Properly configured for development  
+
+Ready for development! 🎉

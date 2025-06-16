@@ -1,73 +1,54 @@
-# WealthOS Frontend
+# React + TypeScript + Vite
 
-Frontend application for the WealthOS financial analysis and investment platform.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Setup
+Currently, two official plugins are available:
 
-### Prerequisites
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-- Node.js 18 or higher
-- pnpm (recommended) or npm
+## Expanding the ESLint configuration
 
-### Installation
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-1. Install dependencies:
-
-```bash
-pnpm install
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-2. Set up environment variables:
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-cp .env.local.example .env.local
-# Edit .env.local with your configuration
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
 ```
-
-3. Run the development server:
-
-```bash
-pnpm dev
-```
-
-The application will be available at `http://localhost:4300`.
-
-## Development
-
-### Code Formatting
-
-```bash
-pnpm format
-```
-
-### Linting
-
-```bash
-pnpm lint
-```
-
-### Building for Production
-
-```bash
-pnpm build
-```
-
-## Project Structure
-
-- `app/`: Next.js app router
-  - `(auth)/`: Authentication routes
-  - `dashboard/`: Dashboard routes
-  - `portfolio/`: Portfolio routes
-  - `market/`: Market analysis routes
-  - `reports/`: Reporting routes
-  - `settings/`: Settings routes
-- `components/`: Reusable components
-  - `ui/`: Basic UI components
-  - `charts/`: Chart components
-  - `tables/`: Table components
-  - `forms/`: Form components
-  - `layout/`: Layout components
-- `lib/`: Frontend utilities
-- `hooks/`: Custom React hooks
-- `store/`: State management
-- `types/`: TypeScript types 

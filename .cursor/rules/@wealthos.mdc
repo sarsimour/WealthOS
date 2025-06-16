@@ -1,0 +1,234 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# WealthOS Development Rules
+
+## Project Overview
+WealthOS is a financial analysis and investment platform with a Python FastAPI backend and Next.js frontend.
+
+## Tech Stack Requirements
+
+### Backend (Python 3.12)
+- **Framework**: FastAPI with uvicorn
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Data Processing**: Pandas, Polars, NumPy
+- **Financial Analysis**: riskfolio-lib, statsmodels, scikit-learn
+- **Authentication**: fastapi-users with JWT
+- **Caching**: Redis with fastapi-cache2
+- **Rate Limiting**: fastapi-limiter
+- **Email**: fastapi-mail
+- **Pagination**: fastapi-pagination
+- **Database Migrations**: Alembic
+- **Dependency Management**: uv (NOT pip)
+- **Environment**: uv-managed virtual environments
+
+### Frontend (Next.js)
+- **Framework**: Next.js with React
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS with Shadcn UI
+- **Package Management**: pnpm
+- **State Management**: Zustand, TanStack React Query
+- **Validation**: Zod
+
+## Data Source Rules
+**CRITICAL**: Always use the correct data provider based on market type:
+
+1. **Chinese Finance Markets**: Use `akshare` library
+2. **International Markets**: Use `yfinance` (Yahoo Finance)
+3. **Bitcoin/Cryptocurrency**: Use `binance-connector`
+
+## Development Workflow
+
+### Environment Setup
+```bash
+# Backend setup
+cd backend
+source .venv/bin/activate.fish  # For Fish shell users
+uv sync  # Sync dependencies
+
+# Frontend setup  
+cd frontend
+pnpm install
+```
+
+### Package Management
+- **Backend**: Use `uv` commands only, NEVER use `pip`
+  - `uv add package_name` - Add new dependency
+  - `uv remove package_name` - Remove dependency
+  - `uv pip install package_name` - Install without adding to pyproject.toml
+  - `uv sync` - Sync from lock file
+- **Frontend**: Use `pnpm` for all package operations
+
+## Code Quality Standards
+
+### Python Backend Rules
+1. **Type Hints**: Always use type hints for function parameters and return values
+2. **Pydantic Models**: Use Pydantic for all data validation and serialization
+3. **Async/Await**: Prefer async functions for I/O operations
+4. **Error Handling**: Use FastAPI's HTTPException for API errors
+5. **Dependency Injection**: Use FastAPI's dependency injection system
+6. **Database**: Use SQLAlchemy async sessions
+7. **Environment Variables**: Use pydantic-settings for configuration
+8. **Testing**: Write pytest tests for all business logic
+9. **Linting**: Use ruff for linting and formatting
+10. **Docstrings**: Use Google-style docstrings
+
+### TypeScript Frontend Rules
+1. **Components**: Use functional components with TypeScript
+2. **State Management**: Prefer Zustand for global state
+3. **Data Fetching**: Use TanStack React Query for server state
+4. **Forms**: Use react-hook-form with Zod validation
+5. **Styling**: Use Tailwind CSS with Shadcn UI components
+6. **Error Boundaries**: Implement proper error handling
+7. **Performance**: Use React.memo and useMemo appropriately
+8. **Accessibility**: Follow WCAG guidelines
+
+## Architecture Patterns
+
+### Backend Structure
+```
+backend/
+├── app/
+│   ├── api/           # API routes
+│   ├── core/          # Core functionality
+│   ├── data/          # Data providers (akshare, yfinance, binance)
+│   ├── factors/       # Financial factors
+│   ├── market_monitor/# Market monitoring
+│   ├── ml/            # Machine learning models
+│   ├── portfolio/     # Portfolio management
+│   ├── reporting/     # Report generation
+│   ├── schemas/       # Pydantic schemas
+│   ├── services/      # Business logic
+│   └── utils/         # Utility functions
+└── tests/             # Test files
+```
+
+### Data Provider Pattern
+Always route data requests through the appropriate provider:
+- Create provider classes for each data source
+- Use factory pattern for provider selection
+- Implement consistent interfaces across providers
+- Handle rate limiting and caching at the provider level
+
+## Database Guidelines
+- Use async SQLAlchemy sessions
+- Create proper database models with relationships
+- Use Alembic for all schema migrations
+- Implement proper indexing for performance
+- Use connection pooling for production
+
+## Security Requirements
+- Never commit API keys or secrets
+- Use environment variables for all configuration
+- Implement proper CORS settings
+- Use JWT tokens for authentication
+- Validate all input data with Pydantic
+- Implement rate limiting on API endpoints
+
+## Performance Optimization
+- Use Redis for caching frequently accessed data
+- Implement database query optimization
+- Use async/await for I/O operations
+- Implement proper pagination for large datasets
+- Use connection pooling for external APIs
+
+## Testing Standards
+- Write unit tests for all business logic
+- Use pytest fixtures for test data
+- Mock external API calls in tests
+- Achieve >80% code coverage
+- Write integration tests for API endpoints
+
+## Environment Management
+- Separate configurations for dev/test/prod
+- Use different databases for each environment
+- Never use production data in development
+- Implement proper logging for different environments
+
+## Deployment Guidelines
+- Use Docker for containerization
+- Implement health checks
+- Use proper environment variable management
+- Implement monitoring and alerting
+- Use CI/CD pipelines for automated deployment
+
+## Code Review Checklist
+- [ ] Type hints are present and correct
+- [ ] Error handling is implemented
+- [ ] Tests are written and passing
+- [ ] Documentation is updated
+- [ ] No hardcoded values or secrets
+- [ ] Performance considerations are addressed
+- [ ] Security best practices are followed
+- [ ] Code follows project structure conventions
+
+## Common Patterns
+
+### FastAPI Route Structure
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db_session
+from app.schemas.market import MarketDataResponse
+from app.services.market_data import MarketDataService
+
+router = APIRouter(prefix="/api/v1/market", tags=["market"])
+
+@router.get("/data/{symbol}", response_model=MarketDataResponse)
+async def get_market_data(
+    symbol: str,
+    db: AsyncSession = Depends(get_db_session),
+    market_service: MarketDataService = Depends()
+) -> MarketDataResponse:
+    """Get market data for a given symbol."""
+    try:
+        data = await market_service.get_market_data(symbol)
+        return MarketDataResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+```
+
+### Data Provider Pattern
+```python
+from abc import ABC, abstractmethod
+from typing import Dict, Any
+
+class DataProvider(ABC):
+    """Abstract base class for data providers."""
+    
+    @abstractmethod
+    async def get_market_data(self, symbol: str) -> Dict[str, Any]:
+        """Get market data for a symbol."""
+        pass
+
+class AkshareProvider(DataProvider):
+    """Chinese market data provider."""
+    
+    async def get_market_data(self, symbol: str) -> Dict[str, Any]:
+        # Implementation for akshare
+        pass
+```
+
+## Environment Variables Template
+```env
+# Database
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost/wealthos_dev
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# API Keys
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_SECRET_KEY=your_binance_secret_key
+
+# JWT
+JWT_SECRET_KEY=your_jwt_secret_key
+JWT_ALGORITHM=HS256
+
+# Environment
+ENVIRONMENT=development
+DEBUG=true
+``` 
