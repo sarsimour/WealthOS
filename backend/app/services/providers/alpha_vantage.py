@@ -1,6 +1,8 @@
 import os
+
 import httpx
 from fastapi import HTTPException, status
+
 from app.services.protocols import PriceProvider
 
 # It's recommended to load the API key from environment variables

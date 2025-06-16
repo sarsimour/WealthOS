@@ -1,7 +1,8 @@
-from app.services.providers.akshare_provider import AkshareProvider
-from app.services.providers.yfinance_provider import YFinanceProvider
-from app.services.providers.binance_provider import BinanceProvider
 import pandas as pd
+
+from app.services.providers.akshare_provider import AkshareProvider
+from app.services.providers.binance_provider import BinanceProvider
+from app.services.providers.yfinance_provider import YFinanceProvider
 
 
 class DataProviderService:

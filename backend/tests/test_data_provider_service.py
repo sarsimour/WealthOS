@@ -1,8 +1,10 @@
-import pytest
-from app.services.data_provider_service import DataProviderService
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
+import pytest
 import requests
+
+from app.services.data_provider_service import DataProviderService
 
 
 def is_binance_blocked():

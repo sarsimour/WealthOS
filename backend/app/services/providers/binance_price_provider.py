@@ -78,7 +78,7 @@ class BinanceProvider(PriceProvider):  # Implement the protocol
                 )
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail=f"External Binance API rate limit exceeded. Please try again later.",
+                    detail="External Binance API rate limit exceeded. Please try again later.",
                 ) from e
             # Log other errors
             raise HTTPException(

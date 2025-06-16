@@ -1,7 +1,8 @@
-from binance.spot import Spot
-import pandas as pd
 from datetime import datetime
 from typing import Optional
+
+import pandas as pd
+from binance.spot import Spot
 
 
 class BinanceProvider:

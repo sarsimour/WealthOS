@@ -3,11 +3,8 @@ from fastapi import APIRouter
 from app.api.routes import auth, users
 
 # Import endpoint routers
-from app.api.v1.endpoints import crypto
-from app.api.v1.endpoints import market_data
-
 # Import the new prices router
-from app.api.v1.endpoints import prices
+from app.api.v1.endpoints import crypto, market_data, prices
 
 api_router = APIRouter()
 
