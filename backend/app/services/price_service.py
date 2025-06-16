@@ -12,9 +12,7 @@ class PriceService:
 
     def __init__(self):
         # TODO: Read provider choice from configuration (e.g., settings.PRICE_PROVIDER)
-        self.provider_name = (
-            "mock"  # Use mock provider for testing due to API restrictions
-        )
+        self.provider_name = "coingecko"  # Use CoinGecko provider for real Bitcoin data
 
         if self.provider_name == "binance":
             self._provider_instance = BinanceProvider()
