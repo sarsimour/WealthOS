@@ -14,6 +14,8 @@ interface BitcoinData {
   high_24h: number
   low_24h: number
   historical_data: PriceData[]
+  currency: string
+  last_updated: string
 }
 
 const BitcoinChart: React.FC = () => {
@@ -23,39 +25,12 @@ const BitcoinChart: React.FC = () => {
 
   const fetchBitcoinPrice = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/price/BTC/USD')
-      if (!response.ok) throw new Error('Failed to fetch price')
+      const response = await fetch('http://localhost:8000/api/v1/prices/bitcoin/full?days=1')
+      if (!response.ok) throw new Error('Failed to fetch Bitcoin data')
       
-      const priceData = await response.json()
+      const bitcoinData = await response.json()
       
-      // Generate mock historical data for demo
-      const mockHistoricalData: PriceData[] = []
-      const currentPrice = parseFloat(priceData.price)
-      const now = Date.now()
-      
-      for (let i = 23; i >= 0; i--) {
-        const variation = (Math.random() - 0.5) * 0.05 // ±2.5% variation
-        const price = currentPrice * (1 + variation * (Math.random() * 0.5))
-        mockHistoricalData.push({
-          timestamp: now - (i * 60 * 60 * 1000), // Every hour
-          price: price
-        })
-      }
-      
-      const high24h = Math.max(...mockHistoricalData.map(d => d.price))
-      const low24h = Math.min(...mockHistoricalData.map(d => d.price))
-      const priceChange24h = currentPrice - mockHistoricalData[0].price
-      const priceChangePercent24h = (priceChange24h / mockHistoricalData[0].price) * 100
-      
-      setData({
-        symbol: priceData.symbol,
-        current_price: currentPrice,
-        price_change_24h: priceChange24h,
-        price_change_percent_24h: priceChangePercent24h,
-        high_24h: high24h,
-        low_24h: low24h,
-        historical_data: mockHistoricalData
-      })
+      setData(bitcoinData)
       setError(null)
     } catch (err) {
       setError('Failed to fetch Bitcoin price')
@@ -147,11 +122,14 @@ const BitcoinChart: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Bitcoin (BTC)</h2>
-            <p className="text-gray-600">Real-time price tracking</p>
+            <p className="text-gray-600">Real-time price tracking powered by CoinGecko</p>
           </div>
-          <p className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border">
-            Powered by WealthOS Backend 🚀
-          </p>
+          <div className="text-right">
+            <p className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border">
+              Live via CoinGecko 🚀
+            </p>
+            <p className="text-xs text-gray-400 mt-1">Updated every 30s</p>
+          </div>
         </div>
         
         <div className="flex items-baseline space-x-4">
@@ -166,10 +144,27 @@ const BitcoinChart: React.FC = () => {
             <span>({isPositive ? '+' : ''}{data.price_change_percent_24h.toFixed(2)}%)</span>
           </div>
         </div>
+
+        {/* 24h Stats */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="bg-white rounded-lg p-4 border border-gray-100">
+            <p className="text-sm text-gray-600">24h High</p>
+            <p className="text-lg font-semibold text-gray-900">{formatPrice(data.high_24h)}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-100">
+            <p className="text-sm text-gray-600">24h Low</p>
+            <p className="text-lg font-semibold text-gray-900">{formatPrice(data.low_24h)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Chart */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">24 Hour Price Chart</h3>
+          <p className="text-sm text-gray-500">Real-time Bitcoin price movements</p>
+        </div>
+        
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
@@ -203,53 +198,12 @@ const BitcoinChart: React.FC = () => {
                 type="monotone"
                 dataKey="price"
                 stroke={chartColor}
-                strokeWidth={3}
+                strokeWidth={2}
                 fill={`url(#${gradientId})`}
-                dot={false}
-                activeDot={{ 
-                  r: 6, 
-                  fill: chartColor,
-                  stroke: '#fff',
-                  strokeWidth: 2,
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
-                }}
+                connectNulls={true}
               />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-blue-700 font-medium">24h High</h3>
-            <span className="text-blue-500 text-xl">📈</span>
-          </div>
-          <p className="text-2xl font-bold text-blue-900">{formatPrice(data.high_24h)}</p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-purple-700 font-medium">24h Low</h3>
-            <span className="text-purple-500 text-xl">📉</span>
-          </div>
-          <p className="text-2xl font-bold text-purple-900">{formatPrice(data.low_24h)}</p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border border-emerald-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-emerald-700 font-medium">Last Updated</h3>
-            <span className="text-emerald-500 text-xl">🕐</span>
-          </div>
-          <p className="text-2xl font-bold text-emerald-900">
-            {new Date().toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: true
-            })}
-          </p>
         </div>
       </div>
     </div>
