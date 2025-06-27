@@ -203,4 +203,4 @@ pnpm-debug.log*
 # Other
 *.swp
 *.swo
-*~ 
+*~ .cursor/
