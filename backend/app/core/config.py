@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Server
     DEBUG: bool = False
     ENVIRONMENT: str = "production"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:4300"]
+    ALLOWED_ORIGINS: List[str] = ["*"]  # Allow all origins for development
 
     class Config:
         env_file = ".env"

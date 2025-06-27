@@ -1,75 +1,111 @@
-from datetime import datetime
-from typing import Optional
+import asyncio
+from datetime import datetime, timedelta, timezone
+from typing import Optional, List, Dict, Any
+import httpx
+from fastapi import HTTPException
 
-import pandas as pd
-from binance.spot import Spot
+# Import the protocol
+from app.services.protocols import PriceProvider
 
 
-class BinanceProvider:
+class BinanceProvider(PriceProvider):
     def __init__(self, api_key: Optional[str] = None, api_secret: Optional[str] = None):
-        self.client = Spot(api_key=api_key, api_secret=api_secret)
+        self.base_url = "https://api.binance.com"
+        self.api_key = api_key
+        self.api_secret = api_secret
 
-    def get_crypto_data(
-        self, symbol: str, start_date: str, end_date: str, interval: str = "1d"
-    ) -> pd.DataFrame:
+    def _format_symbol(self, base_asset_id: str, quote_currency: str) -> str:
+        """Formats the asset IDs into a Binance symbol (e.g., BTCUSDT)."""
+        quote = quote_currency.upper()
+        if quote == "USD":
+            quote = "USDT"
+        return f"{base_asset_id.upper()}{quote}"
+
+    async def get_price(self, base_asset_id: str, quote_currency: str) -> float:
         """
-        Get historical crypto data from Binance.
+        Fetches the current price from Binance asynchronously.
         """
-        try:
-            start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").timestamp() * 1000)
-            end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").timestamp() * 1000)
+        symbol = self._format_symbol(base_asset_id, quote_currency)
 
-            klines = self.client.klines(
-                symbol=symbol.upper(),
-                interval=interval,
-                startTime=start_ts,
-                endTime=end_ts,
-                limit=1000,  # Max limit
-            )
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/api/v3/ticker/price",
+                    params={"symbol": symbol},
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return float(data["price"])
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    raise HTTPException(
+                        status_code=404, detail=f"Symbol {symbol} not found on Binance"
+                    )
+                raise HTTPException(
+                    status_code=503, detail=f"Binance API error: {e.response.text}"
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error fetching price from Binance: {str(e)}",
+                )
 
-            if not klines:
-                return pd.DataFrame()
-
-            df = pd.DataFrame(
-                klines,
-                columns=[
-                    "Open Time",
-                    "Open",
-                    "High",
-                    "Low",
-                    "Close",
-                    "Volume",
-                    "Close Time",
-                    "Quote Asset Volume",
-                    "Number of Trades",
-                    "Taker Buy Base Asset Volume",
-                    "Taker Buy Quote Asset Volume",
-                    "Ignore",
-                ],
-            )
-
-            # Convert timestamp to datetime
-            df["Open Time"] = pd.to_datetime(df["Open Time"], unit="ms")
-            df["Close Time"] = pd.to_datetime(df["Close Time"], unit="ms")
-
-            # Set 'Open Time' as index
-            df.set_index("Open Time", inplace=True)
-
-            # Select and rename columns to be consistent
-            df = df[["Open", "High", "Low", "Close", "Volume"]]
-            df = df.astype(float)
-
-            return df
-
-        except Exception as e:
-            print(f"Error fetching data from Binance for {symbol}: {e}")
-            return pd.DataFrame()
-
-    def get_stock_data(
-        self, symbol: str, start_date: str, end_date: str
-    ) -> pd.DataFrame:
+    async def get_historical_data(
+        self, base_asset_id: str, quote_currency: str, days: int
+    ) -> List[Dict[str, Any]]:
         """
-        Binance does not provide stock data.
+        Get historical crypto data from Binance asynchronously.
         """
-        print("Binance does not provide stock data.")
-        return pd.DataFrame()
+        symbol = self._format_symbol(base_asset_id, quote_currency)
+        start_dt = datetime.now(timezone.utc) - timedelta(days=days)
+        start_ts = int(start_dt.timestamp() * 1000)
+
+        # Determine interval based on days
+        if days <= 1:
+            interval = "15m"
+        elif days <= 7:
+            interval = "2h"
+        elif days <= 30:
+            interval = "8h"
+        else:
+            interval = "1d"
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/api/v3/klines",
+                    params={
+                        "symbol": symbol,
+                        "interval": interval,
+                        "startTime": start_ts,
+                        "limit": 1000,
+                    },
+                    timeout=15.0,
+                )
+                response.raise_for_status()
+                klines = response.json()
+
+                if not klines:
+                    return []
+
+                # Format the data into the expected structure
+                # Binance kline format: [open_time, open, high, low, close, ...]
+                formatted_data = [
+                    {"timestamp": int(kline[0]), "price": float(kline[4])}
+                    for kline in klines
+                ]
+                return formatted_data
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    raise HTTPException(
+                        status_code=404, detail=f"Symbol {symbol} not found on Binance"
+                    )
+                raise HTTPException(
+                    status_code=503, detail=f"Binance API error: {e.response.text}"
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error fetching historical data from Binance: {str(e)}",
+                )

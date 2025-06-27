@@ -36,6 +36,7 @@ except ImportError:
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.services.cache_service import cache_service
 
 
 # Define lifespan manager for cache and limiter initialization/shutdown
@@ -45,14 +46,14 @@ async def lifespan(app: FastAPI):
     redis_connection = None
     if REDIS_AVAILABLE:
         # TODO: Get Redis URL from settings
-        redis_url = "redis://localhost"
+        redis_url = "redis://localhost:6379"
         try:
             redis_connection = redis.from_url(
                 redis_url, encoding="utf8", decode_responses=True
             )
             print(f"Connecting to Redis at {redis_url}...")
             await redis_connection.ping()  # Check connection
-            print("Redis connection successful.")
+            print("✅ Redis connection successful.")
         except Exception as e:
             print(f"!!! Failed to connect to Redis at {redis_url}: {e} !!!")
             print(
@@ -64,6 +65,10 @@ async def lifespan(app: FastAPI):
 
     # Initialize Cache (using In-Memory for now, could switch to Redis)
     print("Initializing cache...")
+
+    # Initialize our custom cache service
+    await cache_service.connect()
+
     if CACHE_AVAILABLE:
         FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
         # Example: FastAPICache.init(RedisBackend(redis_connection), prefix="fastapi-cache")
@@ -84,6 +89,8 @@ async def lifespan(app: FastAPI):
     yield
 
     # Clean up connections/cache (optional for in-memory)
+    await cache_service.disconnect()
+
     if redis_connection:
         await redis_connection.close()
         print("Redis connection closed.")

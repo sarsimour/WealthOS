@@ -21,7 +21,9 @@ class CoinGeckoProvider(PriceProvider):  # Implement the protocol
     """Fetches cryptocurrency prices using the CoinGecko API."""
 
     def __init__(self):
-        self.cg = CoinGeckoAPI() if PYCOINGECKO_AVAILABLE else None
+        # Disable pycoingecko library as it blocks the async event loop
+        # Force use of async HTTP client instead
+        self.cg = None
 
     async def get_price(self, base_asset_id: str, quote_currency: str) -> float:
         """
@@ -146,40 +148,68 @@ class CoinGeckoProvider(PriceProvider):  # Implement the protocol
             "vs_currencies": target_currency,
         }
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
+        import asyncio
 
-                if (
-                    not data
-                    or coingecko_id not in data
-                    or target_currency not in data[coingecko_id]
-                ):
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"CoinGecko: Price data not found for ID '{coingecko_id}' in currency '{target_currency}'",
-                    )
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            last_error = None
 
-                price = data[coingecko_id][target_currency]
-                return float(price)
+            # Retry logic for rate limiting
+            for attempt in range(3):
+                try:
+                    if attempt > 0:
+                        # Wait longer between retries: 5, 10 seconds
+                        wait_time = 5 * attempt
+                        print(f"Rate limited, retrying in {wait_time} seconds...")
+                        await asyncio.sleep(wait_time)
 
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 404:
+                    response = await client.get(url, params=params)
+                    response.raise_for_status()
+                    data = response.json()
+
+                    if (
+                        not data
+                        or coingecko_id not in data
+                        or target_currency not in data[coingecko_id]
+                    ):
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"CoinGecko: Price data not found for ID '{coingecko_id}' in currency '{target_currency}'",
+                        )
+
+                    price = data[coingecko_id][target_currency]
+                    return float(price)
+
+                except httpx.HTTPStatusError as e:
+                    last_error = e
+                    if e.response.status_code == 429 and attempt < 2:
+                        continue  # Retry for rate limiting
+                    # Don't retry for other HTTP errors
+                    break
+                except httpx.RequestError as e:
+                    last_error = e
+                    break  # Don't retry connection errors
+
+            # Handle final error
+            if isinstance(last_error, httpx.HTTPStatusError):
+                if last_error.response.status_code == 404:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail=f"CoinGecko: Asset ID '{coingecko_id}' or currency '{target_currency}' not found.",
-                    ) from e
+                    ) from last_error
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"CoinGecko API ({e.request.url}) failed: {e.response.status_code}",
-                ) from e
-            except httpx.RequestError as e:
+                    detail=f"CoinGecko API ({last_error.request.url}) failed: {last_error.response.status_code}",
+                ) from last_error
+            elif isinstance(last_error, httpx.RequestError):
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"CoinGecko API connection error: {e}",
-                ) from e
+                    detail=f"CoinGecko API connection error: {last_error}",
+                ) from last_error
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="CoinGecko API: Unknown error occurred",
+                )
 
     async def _get_historical_data_http(
         self, coingecko_id: str, target_currency: str, days: int

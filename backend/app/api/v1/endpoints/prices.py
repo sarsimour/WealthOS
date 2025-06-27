@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
+from datetime import datetime, timezone
+from typing import Dict, Any
 
 # Import the cache decorator
 from fastapi_cache.decorator import cache
@@ -8,12 +10,36 @@ from app.services.price_service import get_price_provider
 
 # Import the protocol for type hinting
 from app.services.protocols import PriceProvider
-from app.schemas.prices import PriceResponse
+from app.schemas.prices import (
+    PriceResponse,
+    HistoricalPriceResponse,
+    HistoricalPricePoint,
+    HistoricalDataMetadata,
+    FullBitcoinDataResponse,
+)
 
 # Import the rate limiter dependency
 # from fastapi_limiter.depends import RateLimiter
 
+from app.services.cache_service import get_cache_service, CacheService
+
 router = APIRouter()
+
+# Valid periods and intervals
+VALID_PERIODS = ["1d", "7d", "30d", "90d", "1y"]
+VALID_INTERVALS = ["1m", "5m", "15m", "1h", "4h", "1d"]
+
+
+def _get_interval_for_period(period: str) -> str:
+    """Determine optimal interval based on period"""
+    if period == "1d":
+        return "15m"
+    elif period == "7d":
+        return "2h"
+    elif period == "30d":
+        return "8h"
+    else:
+        return "1d"
 
 
 @router.get(
@@ -56,9 +82,115 @@ async def get_crypto_price(
 
 
 @router.get(
+    "/bitcoin/history",
+    response_model=HistoricalPriceResponse,
+    summary="Get Bitcoin Historical Price Data",
+    description="Fetches historical price data for Bitcoin with configurable time periods and intervals",
+    # dependencies=[Depends(RateLimiter(times=5, minutes=1))],
+)
+# @cache(expire=300)  # Cache for 5 minutes
+async def get_bitcoin_history(
+    request: Request,
+    period: str = Query(
+        default="7d",
+        description="Time period for historical data",
+        regex="^(1d|7d|30d|90d|1y)$",
+    ),
+    interval: str = Query(
+        default=None,
+        description="Data interval (auto-selected if not provided)",
+        regex="^(1m|5m|15m|1h|4h|1d)?$",
+    ),
+    currency: str = Query(default="usd", description="Quote currency"),
+    price_provider: PriceProvider = Depends(get_price_provider),
+):
+    """
+    Comprehensive endpoint for Bitcoin historical price data with flexible time periods.
+    """
+    # Validate inputs
+    if period not in VALID_PERIODS:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid period. Must be one of: {VALID_PERIODS}"
+        )
+
+    # Auto-select interval if not provided
+    if interval is None:
+        interval = _get_interval_for_period(period)
+    elif interval not in VALID_INTERVALS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid interval. Must be one of: {VALID_INTERVALS}",
+        )
+
+    print(
+        f"Fetching Bitcoin history: period={period}, interval={interval}, currency={currency}"
+    )
+
+    try:
+        # Convert period to days
+        period_to_days = {"1d": 1, "7d": 7, "30d": 30, "90d": 90, "1y": 365}
+        days = period_to_days[period]
+
+        # Get historical data
+        if not hasattr(price_provider, "get_historical_data"):
+            raise HTTPException(
+                status_code=503,
+                detail="Historical data not supported by current provider",
+            )
+
+        historical_data = await price_provider.get_historical_data(
+            base_asset_id="btc", quote_currency=currency, days=days
+        )
+
+        if not historical_data:
+            raise HTTPException(status_code=404, detail="No historical data found")
+
+        # Convert to response format
+        data_points = [
+            HistoricalPricePoint(
+                timestamp=point["timestamp"],
+                price=point["price"],
+                volume=point.get("volume"),
+            )
+            for point in historical_data
+        ]
+
+        # Create metadata
+        start_time = datetime.fromtimestamp(
+            historical_data[0]["timestamp"] / 1000, tz=timezone.utc
+        )
+        end_time = datetime.fromtimestamp(
+            historical_data[-1]["timestamp"] / 1000, tz=timezone.utc
+        )
+
+        metadata = HistoricalDataMetadata(
+            total_points=len(data_points),
+            start_time=start_time,
+            end_time=end_time,
+            interval=interval,
+        )
+
+        return HistoricalPriceResponse(
+            symbol="BTC",
+            currency=currency.lower(),
+            period=period,
+            interval=interval,
+            data=data_points,
+            metadata=metadata,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching Bitcoin history: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get(
     "/bitcoin/full",
+    response_model=FullBitcoinDataResponse,
     summary="Get Full Bitcoin Data",
-    description="Fetches current Bitcoin price and historical data from CoinGecko",
+    description="Fetches current Bitcoin price and historical data from Binance",
     # dependencies=[Depends(RateLimiter(times=5, minutes=1))],
 )
 # @cache(expire=60)
@@ -77,56 +209,72 @@ async def get_bitcoin_full_data(
     print(f"Using price provider: {type(price_provider).__name__}")
     print(f"Fetching full Bitcoin data for {days} days in {vs_currency}")
 
-    # Get current price
-    current_price = await price_provider.get_price(
-        base_asset_id="bitcoin", quote_currency=vs_currency
-    )
+    try:
+        # Get current price
+        current_price = await price_provider.get_price(
+            base_asset_id="btc", quote_currency=vs_currency
+        )
 
-    # Get historical data if provider supports it
-    historical_data = []
-    if hasattr(price_provider, "get_historical_data"):
-        try:
-            historical_data = await price_provider.get_historical_data(
-                base_asset_id="bitcoin", quote_currency=vs_currency, days=days
+        # Get historical data if provider supports it
+        historical_data = []
+        if hasattr(price_provider, "get_historical_data"):
+            try:
+                raw_historical_data = await price_provider.get_historical_data(
+                    base_asset_id="btc", quote_currency=vs_currency, days=days
+                )
+                # Convert to HistoricalPricePoint format
+                historical_data = [
+                    HistoricalPricePoint(
+                        timestamp=point["timestamp"],
+                        price=point["price"],
+                        volume=point.get("volume"),
+                    )
+                    for point in raw_historical_data
+                ]
+            except Exception as e:
+                print(f"Failed to get historical data: {e}")
+                # Continue without historical data
+
+        # Calculate 24h change if we have enough data
+        price_change_24h = 0.0
+        price_change_percent_24h = 0.0
+        high_24h = current_price
+        low_24h = current_price
+
+        if historical_data and len(historical_data) > 0:
+            # Get price from 24 hours ago
+            twenty_four_hours_ago = (
+                historical_data[0].price if historical_data else current_price
             )
-        except Exception as e:
-            print(f"Failed to get historical data: {e}")
-            # Continue without historical data
+            price_change_24h = current_price - twenty_four_hours_ago
+            price_change_percent_24h = (
+                (price_change_24h / twenty_four_hours_ago) * 100
+                if twenty_four_hours_ago != 0
+                else 0
+            )
 
-    # Calculate 24h change if we have enough data
-    price_change_24h = 0.0
-    price_change_percent_24h = 0.0
-    high_24h = current_price
-    low_24h = current_price
+            # Calculate 24h high and low
+            prices = [point.price for point in historical_data]
+            high_24h = max(prices + [current_price])
+            low_24h = min(prices + [current_price])
 
-    if historical_data and len(historical_data) > 0:
-        # Get price from 24 hours ago
-        twenty_four_hours_ago = (
-            historical_data[0]["price"] if historical_data else current_price
+        return FullBitcoinDataResponse(
+            symbol="BTC",
+            current_price=current_price,
+            price_change_24h=price_change_24h,
+            price_change_percent_24h=price_change_percent_24h,
+            high_24h=high_24h,
+            low_24h=low_24h,
+            historical_data=historical_data,
+            currency=vs_currency.lower(),
+            last_updated=datetime.now(timezone.utc).isoformat(),
         )
-        price_change_24h = current_price - twenty_four_hours_ago
-        price_change_percent_24h = (
-            (price_change_24h / twenty_four_hours_ago) * 100
-            if twenty_four_hours_ago != 0
-            else 0
-        )
 
-        # Calculate 24h high and low
-        prices = [point["price"] for point in historical_data]
-        high_24h = max(prices + [current_price])
-        low_24h = min(prices + [current_price])
-
-    return {
-        "symbol": "BTC",
-        "current_price": current_price,
-        "price_change_24h": price_change_24h,
-        "price_change_percent_24h": price_change_percent_24h,
-        "high_24h": high_24h,
-        "low_24h": low_24h,
-        "historical_data": historical_data,
-        "currency": vs_currency.lower(),
-        "last_updated": "now",
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_bitcoin_full_data: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.get(
@@ -160,6 +308,12 @@ async def get_stock_price(
     )
 
     return PriceResponse(identifier=symbol, currency=quote_currency, price=price)
+
+
+@router.get("/cache/stats")
+async def get_cache_stats(cache: CacheService = Depends(get_cache_service)):
+    """Get cache statistics and health information."""
+    return await cache.get_cache_stats()
 
 
 # TODO:
