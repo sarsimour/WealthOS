@@ -5,6 +5,7 @@ A modern financial analysis and investment platform with real-time Bitcoin price
 ## 🏗️ Modern Tech Stack
 
 ### Frontend
+
 - **Vite 6.3** - Lightning fast build tool
 - **React 19** - Latest React with new features
 - **Tailwind CSS 4.1** - Latest styling framework
@@ -14,50 +15,76 @@ A modern financial analysis and investment platform with real-time Bitcoin price
 - **Zustand** - Lightweight state management
 
 ### Backend
+
 - **Python 3.12** - Latest Python
 - **FastAPI** - Modern async API framework
 - **uv** - Fast Python package manager
 - **Binance API** - Real-time cryptocurrency data
 - **PostgreSQL** - Database (future)
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Recommended)
 
-### Frontend Setup
+### 🎭 Mock API Mode (Default)
+
+Perfect for frontend development and testing:
+
 ```bash
+# 1. Start Mock API Server
+python mock_api_server.py
+
+# 2. Start Frontend (in new terminal)
 cd frontend
 pnpm install
 pnpm dev
-```
-Frontend runs at: http://localhost:5173
 
-### Backend Setup
-```bash
-cd backend
-source .venv/bin/activate.fish  # For Fish shell
-uv sync
-python main.py
+# 3. Check Status
+python status.py
 ```
-Backend runs at: http://localhost:8000
+
+**URLs:**
+
+- Frontend: <http://localhost:5173>
+- Mock API: <http://localhost:8002>
+
+### 🔗 Real Backend Mode (Optional)
+
+For live Bitcoin data with Redis cache:
+
+```bash
+# 1. Start Redis
+brew install redis && brew services start redis
+
+# 2. Start Real Backend
+cd backend && uv run uvicorn app.main:app --reload --port 8001
+
+# 3. Switch to Real API
+# Edit frontend/src/config/api.ts:
+# export const CURRENT_MODE: ApiMode = 'REAL'
+```
 
 ## 📊 Features
 
 ### Market Tab
+
 - **Real-time Bitcoin Price Chart** - Live BTC/USD pricing
 - **24h Price History** - Simulated historical data
 - **Price Statistics** - High, low, and change indicators
 - **Auto-refresh** - Updates every 30 seconds
 
 ### Dashboard
+
 - Portfolio overview
 - Performance metrics
 - Quick stats
 
 ### Portfolio
+
 - Asset allocation visualization
 - Transaction history
 - Rebalancing tools
 
 ### Analytics
+
 - Performance metrics
 - Risk analysis
 - Export capabilities
@@ -65,6 +92,7 @@ Backend runs at: http://localhost:8000
 ## 🛠️ Development
 
 ### Running Both Services
+
 ```bash
 # Terminal 1 - Backend
 cd backend && source .venv/bin/activate.fish && python main.py
@@ -74,6 +102,7 @@ cd frontend && pnpm dev
 ```
 
 ### API Endpoints
+
 - `GET /` - API status
 - `GET /health` - Health check
 - `GET /api/v1/price/{base_asset}/{quote_currency}` - Get price data
@@ -81,6 +110,7 @@ cd frontend && pnpm dev
 ## 📈 Bitcoin Chart Integration
 
 The Market tab features a real-time Bitcoin price chart that:
+
 1. Fetches live data from your WealthOS backend
 2. Displays 24h price history with beautiful line charts
 3. Shows price statistics and change indicators
@@ -90,6 +120,7 @@ The Market tab features a real-time Bitcoin price chart that:
 ## 🎨 Design System
 
 Built with modern design principles:
+
 - **Clean Interface** - Minimal and intuitive
 - **Dark/Light Mode Ready** - CSS variables for theming
 - **Responsive Design** - Mobile-first approach
@@ -98,6 +129,7 @@ Built with modern design principles:
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```env
 # Backend
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost/wealthos
