@@ -265,20 +265,16 @@ function App() {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white/50 backdrop-blur-sm border-t border-slate-200/60 mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-              <p className="text-slate-600">
-                © 2024 WealthOS. Built with React 19 + Tailwind CSS + CoinGecko API
-              </p>
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-4 text-sm text-slate-500">
-                  <span className="font-medium">Latest Stack:</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium">Vite 6.3</span>
-                    <span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium">React 19</span>
-                    <span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium">Tailwind 4.1</span>
-                  </div>
+        <footer className="bg-white/70 backdrop-blur-xl border-t border-slate-200/60 mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex justify-between items-center">
+              <p className="text-slate-500 text-sm">© 2024 WealthOS. Built with React 19 + Tailwind CSS + CoinGecko API</p>
+              <div className="flex items-center space-x-4">
+                <span className="text-xs font-semibold text-slate-600">Latest Stack:</span>
+                <div className="flex items-center space-x-3 text-xs">
+                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Vite 6.3</span>
+                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">React 19</span>
+                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Tailwind 4.1</span>
                 </div>
               </div>
             </div>
