@@ -40,19 +40,20 @@ class ParseError(LLMServiceError):
 
 
 class LLMService:
-    """Service for interacting with OpenAI's GPT-4 Vision API."""
+    """Service for interacting with LLM Vision API."""
 
     def __init__(self, api_key: Optional[str] = None):
         """Initialize the LLM service.
 
         Args:
-            api_key: OpenAI API key. If None, will use settings.OPENAI_API_KEY
+            api_key: OpenAI API key. will use settings.QWEN_API_KEY
         """
-        self.api_key = api_key or getattr(settings, "OPENAI_API_KEY", None)
+        self.api_key = getattr(settings, "QWEN_API_KEY", None)
+        self.api_base = getattr(settings, "QWEN_BASE_URL", None)
         if not self.api_key:
             raise ValueError("OpenAI API key is required")
 
-        self.client = AsyncOpenAI(api_key=self.api_key)
+        self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.api_base)
         self.max_retries = 3
         self.retry_delay = 1.0
 
@@ -109,7 +110,7 @@ class LLMService:
         for attempt in range(self.max_retries):
             try:
                 response = await self.client.chat.completions.create(
-                    model="gpt-4o",  # GPT-4 with vision capabilities
+                    model="qwen-vl-plus-2025-05-07",  # GPT-4 with vision capabilities
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
@@ -238,7 +239,7 @@ Important:
         for attempt in range(self.max_retries):
             try:
                 response = await self.client.chat.completions.create(
-                    model="gpt-4o",
+                    model="qwen-turbo",
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,

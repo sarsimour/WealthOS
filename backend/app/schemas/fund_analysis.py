@@ -49,11 +49,19 @@ class FundHolding(BaseModel):
     )
     current_price: Optional[Decimal] = Field(None, description="Current unit price")
 
+    @field_validator("holding_value", "current_price", mode="before")
+    @classmethod
+    def parse_decimal_with_commas(cls, v):
+        if isinstance(v, str):
+            # Remove commas from decimal strings
+            return v.replace(",", "")
+        return v
+
     @field_validator("holding_percentage")
     @classmethod
     def validate_percentage(cls, v):
-        if v is not None and (v < 0 or v > 100):
-            raise ValueError("Percentage must be between 0 and 100")
+        if v is not None and (v < -100 or v > 100):
+            raise ValueError("Percentage must be between -100 and 100")
         return v
 
 
@@ -67,6 +75,14 @@ class PortfolioSummary(BaseModel):
         default_factory=datetime.now, description="Analysis timestamp"
     )
     holdings: List[FundHolding] = Field(..., description="List of fund holdings")
+
+    @field_validator("total_value", mode="before")
+    @classmethod
+    def parse_total_value_with_commas(cls, v):
+        if isinstance(v, str):
+            # Remove commas from decimal strings
+            return v.replace(",", "")
+        return v
 
 
 class RiskMetrics(BaseModel):

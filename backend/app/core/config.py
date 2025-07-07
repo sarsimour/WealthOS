@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     # API Keys
     AKSHARE_TOKEN: str = ""
     OPENAI_API_KEY: str = ""
+    QWEN_API_KEY: str = ""
+    QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # Security
     SECRET_KEY: str
