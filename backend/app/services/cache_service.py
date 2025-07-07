@@ -3,14 +3,11 @@ Enhanced caching service with Redis backend and proper data storage patterns.
 """
 
 import json
-import asyncio
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime, timedelta
-import redis.asyncio as redis
-from fastapi import HTTPException
 import logging
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from app.core.config import settings
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 

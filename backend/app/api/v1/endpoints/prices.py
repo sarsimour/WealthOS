@@ -1,27 +1,25 @@
-from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from datetime import datetime, timezone
-from typing import Dict, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 # Import the cache decorator
-from fastapi_cache.decorator import cache
+from app.schemas.prices import (
+    FullBitcoinDataResponse,
+    HistoricalDataMetadata,
+    HistoricalPricePoint,
+    HistoricalPriceResponse,
+    PriceResponse,
+)
+
+# Import the rate limiter dependency
+# from fastapi_limiter.depends import RateLimiter
+from app.services.cache_service import CacheService, get_cache_service
 
 # Import the new dependency function
 from app.services.price_service import get_price_provider
 
 # Import the protocol for type hinting
 from app.services.protocols import PriceProvider
-from app.schemas.prices import (
-    PriceResponse,
-    HistoricalPriceResponse,
-    HistoricalPricePoint,
-    HistoricalDataMetadata,
-    FullBitcoinDataResponse,
-)
-
-# Import the rate limiter dependency
-# from fastapi_limiter.depends import RateLimiter
-
-from app.services.cache_service import get_cache_service, CacheService
 
 router = APIRouter()
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import auth, users
+from app.api.v1 import fund_analysis
 
 # Import endpoint routers
 # Import the new prices router
@@ -22,6 +23,9 @@ api_router.include_router(prices.router, prefix="/v1/prices", tags=["Prices"])
 api_router.include_router(
     market_data.router, prefix="/v1/market-data", tags=["Market Data"]
 )
+
+# Include fund analysis router
+api_router.include_router(fund_analysis.router, prefix="/v1", tags=["Fund Analysis"])
 
 # Include other routers from v1 or other versions as needed
 # api_router.include_router(
