@@ -12,9 +12,10 @@ This script tests the complete workflow:
 import sys
 import asyncio
 from pathlib import Path
+import pytest
 
-# Add the app directory to Python path
-sys.path.insert(0, str(Path(__file__).parent / "app"))
+# Add the backend directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     import pandas as pd
@@ -25,10 +26,13 @@ except ImportError as e:
     sys.exit(1)
 
 # Import our modules
-from data.code_mapping import add_exchange_suffix, batch_add_suffix
-from data.name_mapping import normalize_alipay_fund_name, normalize_akshare_fund_name
-from data.barra_factors import get_barra_factors, generate_mock_barra_factors
-from analysis.fof.portfolio_analysis import (
+from app.data.code_mapping import add_exchange_suffix, batch_add_suffix
+from app.data.name_mapping import (
+    normalize_alipay_fund_name,
+    normalize_akshare_fund_name,
+)
+from app.data.barra_factors import get_barra_factors, generate_mock_barra_factors
+from app.analysis.fof.portfolio_analysis import (
     calculate_portfolio_barra_factors,
     create_benchmark_from_funds,
     calculate_relative_risk_exposure,
@@ -61,7 +65,10 @@ def test_code_mapping():
     for original, with_suffix in batch_results.items():
         print(f"  {original} -> {with_suffix}")
 
-    return test_codes
+        # Add assertions for proper pytest behavior
+    assert len(test_codes) == 6
+    assert add_exchange_suffix("000001") == "000001.SZ"
+    assert add_exchange_suffix("600000") == "600000.SH"
 
 
 def test_name_mapping():
@@ -94,10 +101,43 @@ def test_name_mapping():
         normalized = normalize_akshare_fund_name(name)
         print(f"  '{name}' -> '{normalized}'")
 
-    return test_alipay_names, test_akshare_names
+    # Add assertions for proper pytest behavior
+    assert normalize_alipay_fund_name("华夏成长混合(A类)") == "华夏成长混合"
+    assert normalize_akshare_fund_name("华夏成长证券投资基金") == "华夏成长"
 
 
-async def test_barra_factors(stock_codes):
+@pytest.fixture
+def stock_codes():
+    """Fixture providing test stock codes."""
+    return ["000001", "600000", "300001", "510050", "159915", "920001"]
+
+
+@pytest.fixture
+def barra_factors(stock_codes):
+    """Test Barra factor generation."""
+    print("\n" + "=" * 60)
+    print("TESTING BARRA FACTORS")
+    print("=" * 60)
+
+    print(f"\nGenerating mock Barra factors for {len(stock_codes)} stocks...")
+
+    # Add suffixes to stock codes
+    stock_codes_with_suffix = [add_exchange_suffix(code) for code in stock_codes]
+
+    # Generate mock factors synchronously for pytest
+    from app.data.barra_factors import generate_mock_barra_factors
+
+    barra_factors = generate_mock_barra_factors(stock_codes_with_suffix)
+
+    print(f"Factor data shape: {barra_factors.shape}")
+    print(f"Available factors: {list(barra_factors.columns)}")
+    print("\nSample factor data:")
+    print(barra_factors.head())
+
+    return barra_factors
+
+
+async def test_barra_factors_async(stock_codes):
     """Test Barra factor generation."""
     print("\n" + "=" * 60)
     print("TESTING BARRA FACTORS")
@@ -115,6 +155,11 @@ async def test_barra_factors(stock_codes):
     print(f"Available factors: {list(barra_factors.columns)}")
     print("\nSample factor data:")
     print(barra_factors.head())
+
+    # Add assertions for proper pytest behavior
+    assert barra_factors.shape[0] == len(stock_codes)
+    assert "SIZE" in barra_factors.columns
+    assert "BETA" in barra_factors.columns
 
     return barra_factors
 
@@ -134,6 +179,7 @@ def test_portfolio_analysis(barra_factors):
             "股票代码_带后缀": stock_codes[:3],
             "占净值比例": [0.4, 0.35, 0.25],
             "股票名称": ["Stock A", "Stock B", "Stock C"],
+            "fund_code": ["fund1", "fund1", "fund1"],
         }
     )
 
@@ -143,6 +189,7 @@ def test_portfolio_analysis(barra_factors):
             "股票代码_带后缀": stock_codes[1:4],
             "占净值比例": [0.3, 0.4, 0.3],
             "股票名称": ["Stock B", "Stock C", "Stock D"],
+            "fund_code": ["fund2", "fund2", "fund2"],
         }
     )
 
@@ -165,11 +212,13 @@ def test_portfolio_analysis(barra_factors):
     # Create composite benchmark
     print("\n2. Creating composite benchmark...")
     benchmark_holdings = create_benchmark_from_funds(
-        [fund1_holdings, fund2_holdings], [0.6, 0.4]  # 60% Fund 1, 40% Fund 2
+        [fund1_holdings, fund2_holdings]  # Equal weighting - average of both funds
     )
 
-    print(f"Benchmark holdings:")
+    print(f"Benchmark holdings (average of both funds):")
     print(benchmark_holdings)
+    print(f"Total benchmark weight: {benchmark_holdings['占净值比例'].sum():.4f}")
+    print("Note: Total weight < 1.0 reflects average stock exposure across funds")
 
     benchmark_factors = calculate_portfolio_barra_factors(
         benchmark_holdings, barra_factors, stock_code_col="股票代码_带后缀"
@@ -189,7 +238,13 @@ def test_portfolio_analysis(barra_factors):
     print(f"\nFund 2 vs Benchmark relative exposure:")
     print(fund2_relative.round(4))
 
-    return fund1_factors, fund2_factors, benchmark_factors
+    # Add assertions for proper pytest behavior
+    assert fund1_factors is not None
+    assert fund2_factors is not None
+    assert benchmark_factors is not None
+    assert fund1_factors.shape[0] > 0
+    assert fund2_factors.shape[0] > 0
+    assert benchmark_factors.shape[0] > 0
 
 
 def test_performance_analysis():
@@ -227,7 +282,9 @@ def test_performance_analysis():
     # Calculate performance metrics
     print("\nCalculating performance metrics...")
     performance_metrics = calculate_relative_performance_metrics(
-        portfolio_returns, benchmark_returns
+        portfolio_returns,
+        benchmark_returns,
+        risk_free_rate=0.02,  # 2% annual risk-free rate
     )
 
     print("\nPerformance Metrics:")
@@ -238,7 +295,11 @@ def test_performance_analysis():
         else:
             print(f"{metric:25s}: {value}")
 
-    return performance_metrics
+    # Add assertions for proper pytest behavior
+    assert performance_metrics is not None
+    assert "portfolio_total_return" in performance_metrics
+    assert "benchmark_total_return" in performance_metrics
+    assert "tracking_error" in performance_metrics
 
 
 def create_summary_report(
@@ -329,26 +390,26 @@ async def main():
 
     try:
         # Test 1: Code mapping
-        test_codes = test_code_mapping()
+        test_code_mapping()
+
+        # Define test codes for the remaining tests
+        test_codes = ["000001", "600000", "300001", "510050", "159915", "920001"]
 
         # Test 2: Name mapping
         test_name_mapping()
 
         # Test 3: Barra factors
-        barra_factors = await test_barra_factors(test_codes)
+        barra_factors = await test_barra_factors_async(test_codes)
 
         # Test 4: Portfolio analysis
-        fund1_factors, fund2_factors, benchmark_factors = test_portfolio_analysis(
-            barra_factors
-        )
+        test_portfolio_analysis(barra_factors)
 
         # Test 5: Performance analysis
-        performance_metrics = test_performance_analysis()
+        test_performance_analysis()
 
-        # Test 6: Summary report
-        create_summary_report(
-            fund1_factors, fund2_factors, benchmark_factors, performance_metrics
-        )
+        print("\n" + "=" * 60)
+        print("PORTFOLIO ANALYSIS TESTS COMPLETED")
+        print("=" * 60)
 
         print("\n" + "=" * 60)
         print("ALL TESTS COMPLETED SUCCESSFULLY! ✓")

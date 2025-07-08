@@ -12,6 +12,7 @@ from typing import Optional
 
 from app.schemas.fund_analysis import FundHolding, FundType, PortfolioSummary
 from app.services.llm_service import llm_service
+from app.services.langsmith_service import get_langsmith_service
 from app.workflows.base import BaseWorkflow, WorkflowState, WorkflowStep
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,18 @@ class ImageValidationStep(WorkflowStep):
 
     async def execute(self, state: WorkflowState) -> WorkflowState:
         """Validate image data in the workflow context."""
+        langsmith_service = get_langsmith_service()
+        validation_run = None
+
+        if state.context.get("run_tree"):
+            validation_run = langsmith_service.create_child_run(
+                state.context["run_tree"],
+                "Image Validation",
+                "tool",
+                {"step": "image_validation"},
+                ["validation", "preprocessing"],
+            )
+
         try:
             # Get image data from context
             image_data = state.context.get("image_data")
@@ -56,10 +69,24 @@ class ImageValidationStep(WorkflowStep):
             state.context["image_size"] = image_size
             self.logger.info(f"Image validated: {image_size} bytes")
 
+            # Log validation results to LangSmith
+            if validation_run:
+                validation_run.outputs = {
+                    "image_size": image_size,
+                    "validation_status": "success",
+                }
+                validation_run.end()
+
             return state
 
         except Exception as e:
             self.logger.error(f"Image validation failed: {e}")
+            if validation_run:
+                validation_run.outputs = {
+                    "error": str(e),
+                    "validation_status": "failed",
+                }
+                validation_run.end()
             raise
 
 
@@ -74,6 +101,18 @@ class FundExtractionStep(WorkflowStep):
 
     async def execute(self, state: WorkflowState) -> WorkflowState:
         """Extract fund holdings using LLM vision analysis."""
+        langsmith_service = get_langsmith_service()
+        extraction_run = None
+
+        if state.context.get("run_tree"):
+            extraction_run = langsmith_service.create_child_run(
+                state.context["run_tree"],
+                "Fund Extraction",
+                "llm",
+                {"step": "fund_extraction"},
+                ["llm", "vision", "extraction"],
+            )
+
         try:
             image_bytes = state.context.get("image_bytes")
             if not image_bytes:
@@ -102,6 +141,16 @@ class FundExtractionStep(WorkflowStep):
             Return structured data with all identified holdings.
             """
 
+            # Log LLM call to LangSmith
+            if extraction_run:
+                langsmith_service.log_llm_call(
+                    extraction_run,
+                    "qwen-vl-max",
+                    prompt,
+                    "Processing image...",
+                    {"image_size": len(image_bytes)},
+                )
+
             # Use LLM service to analyze the image
             portfolio_summary = await llm_service.analyze_image_with_structured_output(
                 image_data=image_bytes,
@@ -119,10 +168,25 @@ class FundExtractionStep(WorkflowStep):
                 f"Extracted {len(portfolio_summary.holdings)} fund holdings"
             )
 
+            # Log extraction results to LangSmith
+            if extraction_run:
+                extraction_run.outputs = {
+                    "holdings_count": len(portfolio_summary.holdings),
+                    "total_value": portfolio_summary.total_value,
+                    "extraction_status": "success",
+                }
+                extraction_run.end()
+
             return state
 
         except Exception as e:
             self.logger.error(f"Fund extraction failed: {e}")
+            if extraction_run:
+                extraction_run.outputs = {
+                    "error": str(e),
+                    "extraction_status": "failed",
+                }
+                extraction_run.end()
             raise
 
 
@@ -266,6 +330,18 @@ class ImageAnalysisWorkflow(BaseWorkflow):
     ) -> PortfolioSummary:
         """Analyze an image and return portfolio summary."""
         try:
+            # Create LangSmith run tree for tracing
+            langsmith_service = get_langsmith_service()
+            run_tree = langsmith_service.create_run_tree(
+                "Image Analysis Workflow",
+                "chain",
+                {
+                    "image_size": len(image_data),
+                    "additional_context": additional_context,
+                },
+                ["workflow", "image_analysis", "fund_extraction"],
+            )
+
             # Create initial state with image data
             initial_state = WorkflowState(
                 workflow_id=f"img_analysis_{int(time.time())}",
@@ -273,6 +349,7 @@ class ImageAnalysisWorkflow(BaseWorkflow):
                 context={
                     "image_data": image_data,
                     "additional_context": additional_context,
+                    "run_tree": run_tree,  # Pass run_tree to workflow steps
                 },
             )
 
@@ -280,12 +357,34 @@ class ImageAnalysisWorkflow(BaseWorkflow):
             result_state = await self.execute(initial_state)
 
             if result_state.status == "error":
+                # Log error to LangSmith
+                if run_tree:
+                    run_tree.outputs = {
+                        "error": result_state.error_message,
+                        "status": "failed",
+                    }
+                    run_tree.end()
                 raise ValueError(f"Workflow failed: {result_state.error_message}")
 
             # Extract final results
             portfolio_summary = result_state.context.get("final_results")
             if not portfolio_summary:
+                if run_tree:
+                    run_tree.outputs = {
+                        "error": "No results produced by workflow",
+                        "status": "failed",
+                    }
+                    run_tree.end()
                 raise ValueError("No results produced by workflow")
+
+            # Log success to LangSmith
+            if run_tree:
+                run_tree.outputs = {
+                    "holdings_count": len(portfolio_summary.holdings),
+                    "total_value": portfolio_summary.total_value,
+                    "status": "success",
+                }
+                run_tree.end()
 
             return portfolio_summary
 

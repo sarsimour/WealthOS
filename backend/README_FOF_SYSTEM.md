@@ -261,11 +261,13 @@ asyncio.run(analyze_fund())
 ```python
 from analysis.fof.portfolio_analysis import create_benchmark_from_funds
 
-# Combine multiple fund holdings into a benchmark
+# Combine multiple fund holdings into a benchmark (equal-weighted average)
 benchmark = create_benchmark_from_funds(
     fund_holdings_list=[fund1_holdings, fund2_holdings, fund3_holdings],
-    fund_weights=[0.5, 0.3, 0.2]  # 50%, 30%, 20% allocation
+    fund_codes=["fund1", "fund2", "fund3"]  # Fund identifiers
 )
+# Note: Creates average stock weights across all funds
+# Total weight < 1.0 reflects average stock exposure (rest is cash/bonds)
 ```
 
 ## 📈 Output Examples

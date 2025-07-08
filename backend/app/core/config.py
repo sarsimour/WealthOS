@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     QWEN_API_KEY: str = ""
     QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
+    # LangSmith Configuration
+    LANGSMITH_API_KEY: str = "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"
+    LANGSMITH_PROJECT: str = "WealthOS"
+    LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGSMITH_TRACING: bool = True
+
     # Security
     SECRET_KEY: str
     ALGORITHM: str = "HS256"

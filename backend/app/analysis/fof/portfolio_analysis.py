@@ -93,15 +93,21 @@ def calculate_portfolio_barra_factors(
         stock_codes = valid_holdings[stock_code_col].tolist()
         factor_matrix = barra_factors.loc[stock_codes]
 
+        # Select only numeric columns for factor calculation
+        numeric_columns = factor_matrix.select_dtypes(include=[np.number]).columns
+        factor_matrix_numeric = factor_matrix[numeric_columns]
+
         # Get weights as array
         weights = valid_holdings[weight_col].values
 
         # Calculate portfolio factors: w^T * F
-        portfolio_factors = np.dot(weights, factor_matrix.values)
+        portfolio_factors = np.dot(weights, factor_matrix_numeric.values)
 
         # Create result series
         result = pd.Series(
-            portfolio_factors, index=factor_matrix.columns, name="portfolio_factors"
+            portfolio_factors,
+            index=factor_matrix_numeric.columns,
+            name="portfolio_factors",
         )
 
         # Add metadata
@@ -126,61 +132,34 @@ def calculate_portfolio_barra_factors(
 
 def create_benchmark_from_funds(
     fund_holdings_list: List[pd.DataFrame],
-    fund_weights: List[float],
     weight_col: str = "占净值比例",
     stock_code_col: str = "股票代码_带后缀",
 ) -> pd.DataFrame:
     """
-    Create a composite benchmark from multiple fund holdings.
+    Create a composite benchmark from multiple fund holdings by averaging stock weights.
 
     Args:
         fund_holdings_list: List of DataFrames with fund holdings
-        fund_weights: List of weights for each fund (should sum to 1.0)
         weight_col: Column name containing portfolio weights
         stock_code_col: Column name containing stock codes
 
     Returns:
-        DataFrame with aggregated benchmark holdings
+        DataFrame with aggregated benchmark holdings (average weights across funds)
     """
     _check_dependencies()
 
-    if len(fund_holdings_list) != len(fund_weights):
-        raise PortfolioAnalysisError("Number of funds must match number of weights")
+    # Combine all holdings
+    combined = pd.concat(fund_holdings_list, axis=0, ignore_index=True)
+    fund_codes = combined["fund_code"].unique()
 
-    # Normalize weights to sum to 1.0
-    fund_weights = np.array(fund_weights)
-    fund_weights = fund_weights / fund_weights.sum()
-
-    # Aggregate holdings across funds
-    all_holdings = []
-
-    for holdings, fund_weight in zip(fund_holdings_list, fund_weights):
-        if holdings.empty:
-            continue
-
-        # Scale holdings by fund weight
-        holdings_copy = holdings.copy()
-        holdings_copy[weight_col] = (
-            pd.to_numeric(holdings_copy[weight_col], errors="coerce") * fund_weight
-        )
-        holdings_copy = holdings_copy.dropna(subset=[weight_col])
-
-        all_holdings.append(holdings_copy[[stock_code_col, weight_col]])
-
-    if not all_holdings:
-        logger.warning("No valid holdings found in any fund")
-        return pd.DataFrame()
-
-    # Combine and aggregate by stock
-    combined = pd.concat(all_holdings, ignore_index=True)
+    # Sum stock weights from all funds, then divide by number of funds to get average
     benchmark = combined.groupby(stock_code_col)[weight_col].sum().reset_index()
+    num_funds = len(fund_codes)
+    benchmark[weight_col] = benchmark[weight_col] / num_funds
 
-    # Normalize weights to sum to 1.0
-    total_weight = benchmark[weight_col].sum()
-    if total_weight > 0:
-        benchmark[weight_col] = benchmark[weight_col] / total_weight
-
-    logger.info(f"Created benchmark with {len(benchmark)} unique holdings")
+    logger.info(
+        f"Created benchmark with {len(benchmark)} unique holdings from {num_funds} funds"
+    )
     return benchmark
 
 
@@ -327,7 +306,9 @@ def calculate_information_ratio(
 
 
 def calculate_relative_performance_metrics(
-    portfolio_returns: pd.Series, benchmark_returns: pd.Series
+    portfolio_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    risk_free_rate: float = 0.01,
 ) -> Dict[str, float]:
     """
     Calculate comprehensive relative performance metrics.
@@ -335,6 +316,7 @@ def calculate_relative_performance_metrics(
     Args:
         portfolio_returns: Time series of portfolio returns
         benchmark_returns: Time series of benchmark returns
+        risk_free_rate: Risk-free rate for Sharpe ratio calculation
 
     Returns:
         Dictionary with performance metrics
@@ -377,7 +359,7 @@ def calculate_relative_performance_metrics(
         }
 
         # Calculate Sharpe ratios if risk-free rate is available (assume 0 for now)
-        risk_free_rate = 0.0
+
         metrics["portfolio_sharpe"] = (
             metrics["portfolio_total_return"] - risk_free_rate
         ) / metrics["portfolio_volatility"]
@@ -496,8 +478,14 @@ if __name__ == "__main__":
             print(f"Portfolio factors:\n{portfolio_factors}")
 
             print("\n3. Creating benchmark...")
-            benchmark_holdings = create_benchmark_from_funds([holdings], [1.0])
+            # Add fund_code column to holdings for the benchmark function
+            holdings_with_fund_code = holdings.copy()
+            holdings_with_fund_code["fund_code"] = "test_fund"
+            benchmark_holdings = create_benchmark_from_funds([holdings_with_fund_code])
             print(f"Benchmark holdings shape: {benchmark_holdings.shape}")
+            print(
+                f"Benchmark total weight: {benchmark_holdings['占净值比例'].sum():.4f}"
+            )
 
             benchmark_factors = calculate_portfolio_barra_factors(
                 benchmark_holdings, barra_factors, stock_code_col="股票代码_带后缀"
