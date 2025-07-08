@@ -6,11 +6,14 @@ This module provides functions for:
 2. Computing relative risk exposure vs benchmarks
 3. Analyzing relative performance vs benchmarks
 4. Fast computation using optimized data structures
+5. Portfolio risk metrics calculation
+6. Diversification analysis based on factor exposures
 """
 
 import logging
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, timedelta
+from decimal import Decimal
 
 try:
     import numpy as np
@@ -46,6 +49,454 @@ def _check_dependencies():
         raise ImportError("pandas is required for portfolio analysis")
     if np is None:
         raise ImportError("numpy is required for portfolio analysis")
+
+
+def get_fund_historical_data(
+    fund_codes: List[str],
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+) -> pd.DataFrame:
+    """
+    Fetch historical NAV and return data for funds.
+
+    Args:
+        fund_codes: List of fund codes
+        start_date: Start date for data (defaults to 1 year ago)
+        end_date: End date for data (defaults to today)
+
+    Returns:
+        DataFrame with historical NAV data
+
+    Note:
+        This is a placeholder implementation. In production, this would
+        integrate with akshare or other data providers.
+    """
+    _check_dependencies()
+
+    if start_date is None:
+        start_date = datetime.now() - timedelta(days=365)
+    if end_date is None:
+        end_date = datetime.now()
+
+    # Mock implementation - in production, use akshare
+    logger.warning("Using mock fund data - integrate with akshare for production")
+
+    dates = pd.date_range(start_date, end_date, freq="D")
+    data = []
+
+    for fund_code in fund_codes:
+        # Generate mock NAV data with some realistic patterns
+        np.random.seed(hash(fund_code) % 2**32)  # Deterministic but fund-specific
+
+        base_nav = 1.0
+        daily_returns = np.random.normal(0.0005, 0.015, len(dates))  # ~12% annual vol
+
+        navs = [base_nav]
+        for ret in daily_returns[1:]:
+            navs.append(navs[-1] * (1 + ret))
+
+        for date, nav in zip(dates, navs):
+            data.append(
+                {
+                    "fund_code": fund_code,
+                    "date": date,
+                    "nav": nav,
+                    "daily_return": (nav / navs[0] - 1) if nav != navs[0] else 0.0,
+                }
+            )
+
+    df = pd.DataFrame(data)
+    return df.set_index(["fund_code", "date"])
+
+
+def calculate_portfolio_risk_metrics(
+    portfolio_holdings: List[Dict], fund_historical_data: Optional[pd.DataFrame] = None
+) -> Dict[str, float]:
+    """
+    Calculate comprehensive portfolio risk metrics using historical data.
+
+    Args:
+        portfolio_holdings: List of holdings with fund_code, weight, fund_type
+        fund_historical_data: Historical NAV data (optional, will fetch if not provided)
+
+    Returns:
+        Dictionary with risk metrics including volatility, correlations, VaR, etc.
+    """
+    _check_dependencies()
+
+    try:
+        fund_codes = [holding["fund_code"] for holding in portfolio_holdings]
+        weights = np.array([holding["weight"] for holding in portfolio_holdings])
+
+        # Fetch historical data if not provided
+        if fund_historical_data is None:
+            fund_historical_data = get_fund_historical_data(fund_codes)
+
+        # Calculate returns matrix
+        returns_data = []
+        for fund_code in fund_codes:
+            if fund_code in fund_historical_data.index.get_level_values(0):
+                fund_data = fund_historical_data.loc[fund_code]
+                returns = fund_data["daily_return"].dropna()
+                if len(returns) > 0:
+                    returns_data.append(returns)
+                else:
+                    # Fallback to estimated returns based on fund type
+                    returns_data.append(
+                        _estimate_fund_returns(fund_code, portfolio_holdings)
+                    )
+            else:
+                returns_data.append(
+                    _estimate_fund_returns(fund_code, portfolio_holdings)
+                )
+
+        # Align all return series to common dates
+        if returns_data:
+            returns_df = pd.concat(returns_data, axis=1, keys=fund_codes)
+            returns_df = returns_df.dropna()
+
+            if len(returns_df) > 20:  # Need sufficient data
+                # Calculate portfolio returns
+                portfolio_returns = (returns_df * weights).sum(axis=1)
+
+                # Calculate risk metrics
+                annual_vol = portfolio_returns.std() * np.sqrt(252)
+
+                # Calculate correlation matrix
+                corr_matrix = returns_df.corr()
+                avg_correlation = corr_matrix.values[
+                    np.triu_indices_from(corr_matrix.values, k=1)
+                ].mean()
+
+                # Calculate VaR (5% confidence level)
+                var_95 = np.percentile(portfolio_returns, 5)
+
+                # Calculate maximum drawdown
+                cumulative_returns = (1 + portfolio_returns).cumprod()
+                running_max = cumulative_returns.expanding().max()
+                drawdown = (cumulative_returns - running_max) / running_max
+                max_drawdown = drawdown.min()
+
+                # Calculate Sharpe ratio (assuming 2% risk-free rate)
+                sharpe_ratio = (portfolio_returns.mean() * 252 - 0.02) / annual_vol
+
+                return {
+                    "annual_volatility": annual_vol,
+                    "average_correlation": avg_correlation,
+                    "var_95_daily": var_95,
+                    "max_drawdown": abs(max_drawdown),
+                    "sharpe_ratio": sharpe_ratio,
+                    "data_quality": "historical",
+                    "observation_days": len(returns_df),
+                }
+
+        # Fallback to estimated metrics
+        logger.warning("Insufficient historical data, using estimated risk metrics")
+        return _estimate_portfolio_risk_metrics(portfolio_holdings)
+
+    except Exception as e:
+        logger.error(f"Failed to calculate portfolio risk metrics: {e}")
+        return _estimate_portfolio_risk_metrics(portfolio_holdings)
+
+
+def _estimate_fund_returns(fund_code: str, portfolio_holdings: List[Dict]) -> pd.Series:
+    """Estimate fund returns based on fund type when historical data is unavailable."""
+    # Find the fund in holdings to get its type
+    fund_type = None
+    for holding in portfolio_holdings:
+        if holding["fund_code"] == fund_code:
+            fund_type = holding.get("fund_type", "mixed")
+            break
+
+    # Generate estimated returns based on fund type
+    dates = pd.date_range("2023-01-01", periods=252, freq="D")
+
+    if fund_type == "equity":
+        returns = np.random.normal(0.0008, 0.018, len(dates))  # ~15% vol
+    elif fund_type == "bond":
+        returns = np.random.normal(0.0003, 0.005, len(dates))  # ~5% vol
+    elif fund_type == "money_market":
+        returns = np.random.normal(0.0001, 0.002, len(dates))  # ~2% vol
+    else:  # mixed or unknown
+        returns = np.random.normal(0.0005, 0.012, len(dates))  # ~12% vol
+
+    return pd.Series(returns, index=dates)
+
+
+def _estimate_portfolio_risk_metrics(
+    portfolio_holdings: List[Dict],
+) -> Dict[str, float]:
+    """Estimate portfolio risk metrics when historical data is unavailable."""
+    # Simple estimation based on fund types and weights
+    weights = np.array([holding["weight"] for holding in portfolio_holdings])
+
+    estimated_vols = []
+    for holding in portfolio_holdings:
+        fund_type = holding.get("fund_type", "mixed")
+        if fund_type == "equity":
+            estimated_vols.append(0.15)
+        elif fund_type == "bond":
+            estimated_vols.append(0.05)
+        elif fund_type == "money_market":
+            estimated_vols.append(0.02)
+        else:
+            estimated_vols.append(0.12)
+
+    estimated_vols = np.array(estimated_vols)
+
+    # Simple portfolio volatility (assuming 0.6 average correlation)
+    avg_correlation = 0.6
+    portfolio_variance = np.sum(
+        (weights * estimated_vols) ** 2
+    ) + 2 * avg_correlation * np.sum(
+        np.outer(weights * estimated_vols, weights * estimated_vols)[
+            np.triu_indices(len(weights), k=1)
+        ]
+    )
+
+    portfolio_vol = np.sqrt(portfolio_variance)
+
+    return {
+        "annual_volatility": portfolio_vol,
+        "average_correlation": avg_correlation,
+        "var_95_daily": -0.025,  # Rough estimate
+        "max_drawdown": 0.15,  # Rough estimate
+        "sharpe_ratio": 0.5,  # Rough estimate
+        "data_quality": "estimated",
+        "observation_days": 0,
+    }
+
+
+def calculate_diversification_metrics(
+    portfolio_holdings: List[Dict],
+    factor_exposures: Optional[pd.Series] = None,
+    concentration_threshold: float = 0.4,
+) -> Dict[str, float]:
+    """
+    Calculate comprehensive diversification metrics including factor concentration analysis.
+
+    Args:
+        portfolio_holdings: List of holdings with weights
+        factor_exposures: Portfolio factor exposures from Barra analysis
+        concentration_threshold: Threshold for considering factor exposure as concentrated
+
+    Returns:
+        Dictionary with diversification metrics
+    """
+    _check_dependencies()
+
+    try:
+        weights = np.array([holding["weight"] for holding in portfolio_holdings])
+
+        # 1. Basic concentration metrics
+        # Herfindahl-Hirschman Index
+        hhi = np.sum(weights**2)
+
+        # Effective number of holdings
+        effective_holdings = 1 / hhi if hhi > 0 else 0
+
+        # Concentration ratio (top 3 holdings)
+        top_3_concentration = np.sum(np.sort(weights)[-3:])
+
+        # 2. Diversification score (0-1, higher is better)
+        max_possible_hhi = 1.0  # Single holding
+        min_possible_hhi = 1.0 / len(weights)  # Equal weights
+
+        if max_possible_hhi > min_possible_hhi:
+            diversification_score = 1 - (hhi - min_possible_hhi) / (
+                max_possible_hhi - min_possible_hhi
+            )
+        else:
+            diversification_score = 1.0
+
+        # 3. Factor concentration analysis
+        factor_concentration_risks = []
+        max_factor_exposure = 0.0
+
+        if factor_exposures is not None and len(factor_exposures) > 0:
+            # Check for concentrated factor exposures
+            abs_exposures = np.abs(factor_exposures)
+            max_factor_exposure = abs_exposures.max()
+
+            # Identify concentrated factors
+            concentrated_factors = abs_exposures[
+                abs_exposures > concentration_threshold
+            ]
+
+            for factor_name, exposure in concentrated_factors.items():
+                factor_concentration_risks.append(
+                    {
+                        "factor": factor_name,
+                        "exposure": exposure,
+                        "risk_level": "high" if abs(exposure) > 0.6 else "medium",
+                    }
+                )
+
+        # 4. Asset type diversification
+        fund_types = [
+            holding.get("fund_type", "unknown") for holding in portfolio_holdings
+        ]
+        type_weights = {}
+        for fund_type, weight in zip(fund_types, weights):
+            type_weights[fund_type] = type_weights.get(fund_type, 0) + weight
+
+        # Calculate asset type concentration
+        type_hhi = sum(w**2 for w in type_weights.values())
+        asset_type_diversification = 1 - type_hhi if len(type_weights) > 1 else 0
+
+        return {
+            "diversification_score": diversification_score,
+            "herfindahl_index": hhi,
+            "effective_holdings": effective_holdings,
+            "top_3_concentration": top_3_concentration,
+            "asset_type_diversification": asset_type_diversification,
+            "max_factor_exposure": max_factor_exposure,
+            "factor_concentration_count": len(factor_concentration_risks),
+            "factor_concentration_risks": factor_concentration_risks,
+            "overall_diversification_grade": _grade_diversification(
+                diversification_score, len(factor_concentration_risks)
+            ),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to calculate diversification metrics: {e}")
+        raise PortfolioAnalysisError(f"Diversification calculation failed: {e}")
+
+
+def _grade_diversification(diversification_score: float, factor_risks: int) -> str:
+    """Grade overall portfolio diversification."""
+    if diversification_score > 0.8 and factor_risks == 0:
+        return "A"  # Excellent
+    elif diversification_score > 0.6 and factor_risks <= 1:
+        return "B"  # Good
+    elif diversification_score > 0.4 and factor_risks <= 2:
+        return "C"  # Average
+    elif diversification_score > 0.2 and factor_risks <= 3:
+        return "D"  # Below Average
+    else:
+        return "F"  # Poor
+
+
+def assess_factor_concentration(
+    factor_exposures: pd.Series,
+    benchmark_exposures: Optional[pd.Series] = None,
+    risk_thresholds: Optional[Dict[str, float]] = None,
+) -> Dict[str, Dict]:
+    """
+    Assess portfolio factor concentration risks.
+
+    Args:
+        factor_exposures: Portfolio factor exposures
+        benchmark_exposures: Benchmark factor exposures for comparison
+        risk_thresholds: Custom risk thresholds for each factor
+
+    Returns:
+        Dictionary with factor concentration analysis
+    """
+    if risk_thresholds is None:
+        risk_thresholds = {
+            "SIZE": 0.5,
+            "BETA": 0.4,
+            "BTOP": 0.3,
+            "MOMENTUM": 0.4,
+            "VOLATILITY": 0.3,
+            "GROWTH": 0.4,
+            "EARNINGS_YIELD": 0.3,
+            "LEVERAGE": 0.3,
+        }
+
+    concentration_analysis = {}
+
+    for factor, exposure in factor_exposures.items():
+        abs_exposure = abs(exposure)
+        threshold = risk_thresholds.get(factor, 0.4)  # Default threshold
+
+        # Determine risk level
+        if abs_exposure > threshold * 1.5:
+            risk_level = "HIGH"
+        elif abs_exposure > threshold:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+
+        # Calculate relative exposure if benchmark available
+        relative_exposure = None
+        if benchmark_exposures is not None and factor in benchmark_exposures:
+            relative_exposure = exposure - benchmark_exposures[factor]
+
+        concentration_analysis[factor] = {
+            "absolute_exposure": exposure,
+            "relative_exposure": relative_exposure,
+            "risk_level": risk_level,
+            "threshold": threshold,
+            "exceeds_threshold": abs_exposure > threshold,
+            "interpretation": _interpret_factor_exposure(factor, exposure, risk_level),
+        }
+
+    return concentration_analysis
+
+
+def _interpret_factor_exposure(factor: str, exposure: float, risk_level: str) -> str:
+    """Provide human-readable interpretation of factor exposure."""
+    abs_exp = abs(exposure)
+    direction = "high" if exposure > 0 else "low"
+
+    interpretations = {
+        "SIZE": f"Portfolio tilts toward {direction} market cap stocks",
+        "BETA": f"Portfolio has {direction} market sensitivity",
+        "BTOP": f"Portfolio tilts toward {'value' if exposure > 0 else 'growth'} stocks",
+        "MOMENTUM": f"Portfolio favors {'momentum' if exposure > 0 else 'contrarian'} strategies",
+        "VOLATILITY": f"Portfolio tilts toward {direction} volatility stocks",
+        "GROWTH": f"Portfolio tilts toward {'growth' if exposure > 0 else 'value'} stocks",
+        "EARNINGS_YIELD": f"Portfolio tilts toward {direction} earnings yield stocks",
+        "LEVERAGE": f"Portfolio tilts toward {direction} leverage companies",
+    }
+
+    base_interpretation = interpretations.get(
+        factor, f"Portfolio has {direction} {factor} exposure"
+    )
+
+    if risk_level == "HIGH":
+        return f"⚠️ {base_interpretation} (CONCENTRATED RISK)"
+    elif risk_level == "MEDIUM":
+        return f"⚡ {base_interpretation} (moderate concentration)"
+    else:
+        return f"✓ {base_interpretation} (well-balanced)"
+
+
+def calculate_correlation_matrix(
+    fund_codes: List[str], historical_data: Optional[pd.DataFrame] = None
+) -> pd.DataFrame:
+    """
+    Calculate correlation matrix between funds.
+
+    Args:
+        fund_codes: List of fund codes
+        historical_data: Historical return data
+
+    Returns:
+        Correlation matrix as DataFrame
+    """
+    _check_dependencies()
+
+    if historical_data is None:
+        historical_data = get_fund_historical_data(fund_codes)
+
+    # Extract returns for each fund
+    returns_data = {}
+    for fund_code in fund_codes:
+        if fund_code in historical_data.index.get_level_values(0):
+            fund_data = historical_data.loc[fund_code]
+            returns_data[fund_code] = fund_data["daily_return"].dropna()
+
+    if returns_data:
+        returns_df = pd.DataFrame(returns_data)
+        return returns_df.corr()
+    else:
+        # Return identity matrix if no data
+        return pd.DataFrame(
+            np.eye(len(fund_codes)), index=fund_codes, columns=fund_codes
+        )
 
 
 def calculate_portfolio_barra_factors(
