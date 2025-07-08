@@ -2,7 +2,7 @@
   "miniprogramRoot": "./dist",
   "projectname": "WealthOS",
   "description": "WealthOS 投资理财小程序",
-  "appid": "wx0658d894d68cfc62",
+  "appid": "YOUR_WECHAT_APPID_HERE",
   "setting": {
     "urlCheck": false,
     "es6": true,
@@ -24,4 +24,4 @@
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
   "condition": {}
-}
+} 

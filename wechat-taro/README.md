@@ -10,7 +10,7 @@
 - ✅ **Canvas图表**: 原生Canvas绘制价格趋势图
 - ✅ **响应式设计**: 现代化金融应用界面
 - ✅ **下拉刷新**: 原生小程序交互
-- ✅ **真实AppID**: `wx0658d894d68cfc62`
+- ✅ **WeChat AppID**: 需要配置你的小程序AppID
 
 ## 🏗️ **技术栈**
 
@@ -26,8 +26,18 @@
 
 ### **前提条件**
 - ✅ 已安装微信开发者工具
-- ✅ 已注册微信小程序 AppID: `wx0658d894d68cfc62`
+- ✅ 已注册微信小程序并获取AppID
 - ✅ 后端已配置并运行在端口 8101
+
+### **Step 0: 配置项目**
+
+```bash
+# 复制配置文件模板
+cp project.config.json.template project.config.json
+
+# 编辑配置文件，替换YOUR_WECHAT_APPID_HERE为你的实际AppID
+# 例如: "appid": "wxYOUR_ACTUAL_APPID_HERE"
+```
 
 ---
 
@@ -88,7 +98,7 @@ ls -la dist/
 2. **导入项目:**
    ```
    项目目录: /Users/s/Projects/WealthOS/wechat-taro/dist
-   AppID: wx0658d894d68cfc62
+   AppID: 使用你在project.config.json中配置的AppID
    项目名称: WealthOS
    ```
 3. **开发设置:**
