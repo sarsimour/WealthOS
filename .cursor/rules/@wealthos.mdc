@@ -45,7 +45,7 @@ WealthOS is a financial analysis and investment platform with a Python FastAPI b
 ```bash
 # Backend setup
 cd backend
-source .venv/bin/activate.fish  # For Fish shell users
+source .venv/bin/activate
 uv sync  # Sync dependencies
 
 # Frontend setup  
