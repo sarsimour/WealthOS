@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import BitcoinChart from './components/BitcoinChart'
+import FundAnalysis from './components/FundAnalysis'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const queryClient = new QueryClient()
 
@@ -9,10 +11,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('market');
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-        {/* Header */}
-        <header className="bg-white/70 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-10 shadow-sm">
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+          {/* Header */}
+          <header className="bg-white/70 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">
@@ -34,13 +37,13 @@ function App() {
               </button>
             </div>
           </div>
-        </header>
+          </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-lg border border-slate-200/60">
-              <TabsTrigger 
+          {/* Main Content */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-lg border border-slate-200/60">
+                <TabsTrigger 
                 value="dashboard" 
                 className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
               >
@@ -60,6 +63,13 @@ function App() {
               >
                 <span className="text-lg">💼</span>
                 <span className="font-semibold">Portfolio</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="fund-analysis" 
+                className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
+              >
+                <span className="text-lg">🤖</span>
+                <span className="font-semibold">AI Analysis</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics" 
@@ -85,31 +95,21 @@ function App() {
                   <p className="text-slate-600 max-w-md mx-auto text-lg leading-relaxed">
                     Your comprehensive financial overview and performance insights at a glance.
                   </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
-                    <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
-                        <span className="text-white text-xl">💰</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">Total Portfolio</h3>
-                      <p className="text-3xl font-bold text-emerald-600 mb-1">$125,430.50</p>
-                      <p className="text-sm text-slate-500">+12.5% this month</p>
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200">
+                      <div className="text-blue-600 text-3xl mb-2">💰</div>
+                      <h3 className="font-semibold text-blue-900 mb-1">Total Assets</h3>
+                      <p className="text-blue-700 text-sm">Track your investment portfolio value</p>
                     </div>
-                    <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
-                        <span className="text-white text-xl">📈</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">24h Change</h3>
-                      <p className="text-3xl font-bold text-blue-600 mb-1">+2.4%</p>
-                      <p className="text-sm text-slate-500">+$3,010.33</p>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200">
+                      <div className="text-green-600 text-3xl mb-2">📈</div>
+                      <h3 className="font-semibold text-green-900 mb-1">Performance</h3>
+                      <p className="text-green-700 text-sm">Monitor returns and growth metrics</p>
                     </div>
-                    <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200">
-                        <span className="text-white text-xl">🎯</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">Total Profit</h3>
-                      <p className="text-3xl font-bold text-purple-600 mb-1">$12,430.50</p>
-                      <p className="text-sm text-slate-500">+9.9% return</p>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200">
+                      <div className="text-purple-600 text-3xl mb-2">🎯</div>
+                      <h3 className="font-semibold text-purple-900 mb-1">Goals</h3>
+                      <p className="text-purple-700 text-sm">Progress towards financial objectives</p>
                     </div>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ function App() {
                       <p className="text-slate-600 text-lg">Real-time cryptocurrency prices and analytics</p>
                     </div>
                     <div className="text-right">
-                      <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-emergreen-500 to-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                      <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                         <span>Live Data</span>
                       </div>
@@ -138,150 +138,92 @@ function App() {
 
               <TabsContent value="portfolio" className="space-y-8">
                 <div className="text-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl mb-8">
-                    <span className="text-white text-4xl">💼</span>
-                  </div>
-                  <h2 className="text-4xl font-bold text-slate-900 mb-4">Investment Portfolio</h2>
-                  <p className="text-slate-600 max-w-md mx-auto text-lg leading-relaxed">
-                    Manage your investments, view asset allocation, and track performance metrics.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 max-w-5xl mx-auto">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-slate-900">Asset Allocation</h3>
-                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                          <span className="text-white text-sm">📊</span>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                            <span className="text-slate-700 font-medium">Bitcoin (BTC)</span>
-                          </div>
-                          <span className="font-bold text-slate-900">45%</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span className="text-slate-700 font-medium">Ethereum (ETH)</span>
-                          </div>
-                          <span className="font-bold text-slate-900">30%</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span className="text-slate-700 font-medium">Stocks</span>
-                          </div>
-                          <span className="font-bold text-slate-900">25%</span>
-                        </div>
-                      </div>
+                  <div className="relative mb-8">
+                    <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
+                      <span className="text-white text-4xl">💼</span>
                     </div>
-                    
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-slate-900">Recent Activity</h3>
-                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                          <span className="text-white text-sm">📈</span>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                              <span className="text-green-600 text-xs">+</span>
-                            </div>
-                            <span className="text-slate-700 font-medium">Buy BTC</span>
-                          </div>
-                          <span className="font-bold text-green-600">+0.01 BTC</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                              <span className="text-red-600 text-xs">-</span>
-                            </div>
-                            <span className="text-slate-700 font-medium">Sell ETH</span>
-                          </div>
-                          <span className="font-bold text-red-600">-0.5 ETH</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 text-xs">+</span>
-                            </div>
-                            <span className="text-slate-700 font-medium">Buy AAPL</span>
-                          </div>
-                          <span className="font-bold text-blue-600">+10 shares</span>
-                        </div>
-                      </div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">⚡</span>
+                    </div>
+                  </div>
+                  <h2 className="text-4xl font-bold text-slate-900 mb-4">Portfolio Management</h2>
+                  <p className="text-slate-600 max-w-md mx-auto text-lg leading-relaxed">
+                    Advanced portfolio analytics, risk assessment, and optimization tools powered by AI.
+                  </p>
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200">
+                      <div className="text-purple-600 text-3xl mb-2">⚖️</div>
+                      <h3 className="font-semibold text-purple-900 mb-1">Risk Analysis</h3>
+                      <p className="text-purple-700 text-sm">Comprehensive risk metrics and stress testing</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-2xl border border-indigo-200">
+                      <div className="text-indigo-600 text-3xl mb-2">🔄</div>
+                      <h3 className="font-semibold text-indigo-900 mb-1">Rebalancing</h3>
+                      <p className="text-indigo-700 text-sm">Smart allocation recommendations</p>
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="fund-analysis" className="space-y-8">
+                <FundAnalysis />
               </TabsContent>
 
               <TabsContent value="analytics" className="space-y-8">
                 <div className="text-center py-16">
-                  <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl mb-8">
-                    <span className="text-white text-4xl">📊</span>
+                  <div className="relative mb-8">
+                    <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
+                      <span className="text-white text-4xl">📈</span>
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">🔥</span>
+                    </div>
                   </div>
                   <h2 className="text-4xl font-bold text-slate-900 mb-4">Advanced Analytics</h2>
                   <p className="text-slate-600 max-w-md mx-auto text-lg leading-relaxed">
-                    Deep insights, risk metrics, and performance analytics for informed decision making.
+                    Deep insights into market trends, factor analysis, and predictive modeling for smarter investment decisions.
                   </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-6xl mx-auto">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                        <span className="text-white text-xl">📊</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">Sharpe Ratio</h3>
-                      <p className="text-3xl font-bold text-blue-600 mb-1">1.45</p>
-                      <p className="text-sm text-slate-500">Excellent risk-adjusted return</p>
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl border border-orange-200">
+                      <div className="text-orange-600 text-3xl mb-2">🎯</div>
+                      <h3 className="font-semibold text-orange-900 mb-1">Factor Analysis</h3>
+                      <p className="text-orange-700 text-sm">Barra risk model insights</p>
                     </div>
-                    
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300">
-                      <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-4">
-                        <span className="text-white text-xl">📉</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">Max Drawdown</h3>
-                      <p className="text-3xl font-bold text-red-600 mb-1">-12.3%</p>
-                      <p className="text-sm text-slate-500">Largest peak-to-trough decline</p>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-2xl border border-red-200">
+                      <div className="text-red-600 text-3xl mb-2">🔮</div>
+                      <h3 className="font-semibold text-red-900 mb-1">Predictions</h3>
+                      <p className="text-red-700 text-sm">AI-powered forecasting</p>
                     </div>
-                    
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200/60 hover:shadow-xl transition-all duration-300">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
-                        <span className="text-white text-xl">⚡</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-2 text-lg">Beta</h3>
-                      <p className="text-3xl font-bold text-purple-600 mb-1">0.85</p>
-                      <p className="text-sm text-slate-500">Lower market correlation</p>
+                    <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-2xl border border-cyan-200">
+                      <div className="text-cyan-600 text-3xl mb-2">🌊</div>
+                      <h3 className="font-semibold text-cyan-900 mb-1">Market Sentiment</h3>
+                      <p className="text-cyan-700 text-sm">Real-time sentiment analysis</p>
                     </div>
                   </div>
                 </div>
               </TabsContent>
-            </div>
-          </Tabs>
-        </main>
+              </div>
+            </Tabs>
+          </main>
 
-        {/* Footer */}
-        <footer className="bg-white/70 backdrop-blur-xl border-t border-slate-200/60 mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex justify-between items-center">
-              <p className="text-slate-500 text-sm">© 2024 WealthOS. Built with React 19 + Tailwind CSS + CoinGecko API</p>
-              <div className="flex items-center space-x-4">
-                <span className="text-xs font-semibold text-slate-600">Latest Stack:</span>
-                <div className="flex items-center space-x-3 text-xs">
-                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Vite 6.3</span>
-                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">React 19</span>
-                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Tailwind 4.1</span>
+          <footer className="bg-white/70 backdrop-blur-xl border-t border-slate-200/60 mt-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex justify-between items-center">
+                <p className="text-slate-500 text-sm">© 2024 WealthOS. Built with React 19 + Tailwind CSS + AI Analysis</p>
+                <div className="flex items-center space-x-4">
+                  <span className="text-xs font-semibold text-slate-600">Latest Stack:</span>
+                  <div className="flex items-center space-x-3 text-xs">
+                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Vite 6.3</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">React 19</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Tailwind 4.1</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </footer>
-      </div>
-    </QueryClientProvider>
+          </footer>
+        </div>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
