@@ -139,18 +139,19 @@ const FundAnalysis: React.FC = () => {
           if (event.content && event.metadata?.display !== false) {
             const content = event.content
             
+            // Since backend sends complete messages, simulate streaming for better UX
             const existingIndex = newMessages.findIndex(msg => 
               msg.role === 'assistant' && msg.type === 'text'
             )
             
             if (existingIndex >= 0) {
-              // Always append to existing message for streaming
+              // Replace existing message with new complete content
               newMessages[existingIndex] = {
                 ...newMessages[existingIndex],
-                content: newMessages[existingIndex].content + content
+                content: content // Replace with complete content
               }
             } else {
-              // Create new Xiaomei message
+              // Create new Xiaomei message with complete content
               newMessages.push({
                 id: event.message_id || 'xiaomei-ai',
                 role: 'assistant',
@@ -163,7 +164,7 @@ const FundAnalysis: React.FC = () => {
             return {
               ...prev,
               messages: newMessages,
-              isStreaming: !event.metadata?.final_response,
+              isStreaming: true, // Show as streaming for simulated effect
               error: null
             }
           }
@@ -343,6 +344,13 @@ const FundAnalysis: React.FC = () => {
     }))
   }, [])
 
+  const handleStreamingComplete = useCallback(() => {
+    setState(prev => ({ 
+      ...prev, 
+      isStreaming: false
+    }))
+  }, [])
+
   const clearImage = useCallback(() => {
     setState(prev => ({ 
       ...prev, 
@@ -441,6 +449,7 @@ const FundAnalysis: React.FC = () => {
         messages={state.messages}
         isStreaming={state.isStreaming}
         onClearAnalysis={clearAnalysis}
+        onStreamingComplete={handleStreamingComplete}
       />
     </div>
   )

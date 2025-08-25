@@ -1,17 +1,20 @@
 import React from 'react'
 import { Loader2 } from 'lucide-react'
 import type { FrontendMessage } from '../lib/api'
+import StreamingText from './StreamingText'
 
 interface AnalysisResultProps {
   messages: FrontendMessage[]
   isStreaming: boolean
   onClearAnalysis: () => void
+  onStreamingComplete?: () => void
 }
 
 const AnalysisResult: React.FC<AnalysisResultProps> = ({
   messages,
   isStreaming,
-  onClearAnalysis
+  onClearAnalysis,
+  onStreamingComplete
 }) => {
   // Only show assistant messages (Xiaomei's responses)
   const xiaomeiMessages = messages.filter(msg => msg.role === 'assistant')
@@ -38,9 +41,16 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
         {xiaomeiMessages.map((message, index) => (
           <div key={message.id || index}>
             {message.type === 'text' && (
-              <div className="text-slate-800 leading-relaxed whitespace-pre-wrap">
-                {message.content}
-              </div>
+              <StreamingText
+                text={message.content}
+                speed={35} // Slightly faster for better UX
+                enabled={true}
+                className="text-slate-800 leading-relaxed"
+                onComplete={() => {
+                  // Call parent callback when text streaming completes
+                  onStreamingComplete?.()
+                }}
+              />
             )}
             {message.type === 'image' && (
               <img
