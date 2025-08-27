@@ -12,15 +12,15 @@ export const API_CONFIG = {
   
   // 🔗 REAL API - Use this for production with actual data providers
   REAL: {
-    BASE_URL: 'http://localhost:8001/api/v1', 
-    DESCRIPTION: 'Real backend with Redis cache and data providers'
+    BASE_URL: 'http://localhost:8000', 
+    DESCRIPTION: 'Real WealthOS backend with chat and image analysis'
   }
 } as const
 
 // 🚀 CURRENT CONFIGURATION - Change this to switch between APIs
 // Set to 'MOCK' for testing, 'REAL' for production
 type ApiMode = 'MOCK' | 'REAL'
-export const CURRENT_MODE: ApiMode = 'MOCK'
+export const CURRENT_MODE: ApiMode = 'REAL'
 
 // Export the current API base URL
 export const API_BASE_URL = API_CONFIG[CURRENT_MODE].BASE_URL
