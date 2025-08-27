@@ -184,11 +184,11 @@ describe('BitcoinChart', () => {
     jest.useFakeTimers()
     
     // Mock successful fetches
-    (fetch as jest.Mock)
-      .mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockCurrentData)
-      })
+    const mockFetch = (fetch as jest.Mock);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockCurrentData)
+    })
     
     render(<BitcoinChart />)
     
