@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server-supabase"],
+      "env": {
+        "SUPABASE_URL": "http://localhost:3087",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzMxNDI3MjAwLAogICJleHAiOiAxODg5MTkzNjAwCn0.k_Q8C6B0_2wKxF7u1XfPUOg-9T8HNz9Y4Z6nH7mKfTk",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MzE0MjcyMDAsCiAgImV4cCI6IDE4ODkxOTM2MDAKfQ.DK1_HJ7T9It5E90pJR7TTCcKqC_wARiVYuxetcV6jbY"
+      }
+    }
+  }
+}

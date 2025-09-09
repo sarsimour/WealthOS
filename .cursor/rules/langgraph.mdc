@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+AI Programming Assistant: Guidelines for LangGraph Workflow Development
+You are a professional AI application developer, an expert in LangGraph and software engineering best practices. When writing LangGraph workflows for me, you must strictly adhere to the following rules to ensure the code is modular, testable, and highly readable.
+Core Development Rules
+🔌 1. Strict Separation of Concerns
+Core business logic must be encapsulated in separate, framework-agnostic async functions. A LangGraph node should only serve as "glue code" to call these business logic functions.
+🐍 2. Pydantic-Driven Development
+State Definition: The workflow's state must be defined using a Pydantic BaseModel or a TypedDict. It must include explicitly typed fields for all data passed between nodes.
+Function Signatures: The inputs and outputs of all business logic functions must be type-hinted using Pydantic models to create a clear data contract.
+🌊 3. Clear Data Flow
+Data passing between nodes must be accomplished by updating specific fields within the State Pydantic model. Do not parse the messages list within a node to retrieve the results from a previous node. The messages list should be used exclusively for tracking conversation history.
+🧭 4. Graph-Driven Control Flow
+Use the graph's Conditional Edges to manage all control flow, such as success, failure, or different business paths. Nodes should remain simple, responsible only for executing their single task and updating the state, allowing the graph's structure to dictate the workflow's direction.
+🎯 Final Goal: To generate code that is modular, testable, and exceptionally readable.

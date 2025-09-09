@@ -40,7 +40,7 @@ Create a `.env` file in the `backend` directory:
 
 ```env
 # Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/WealthOS
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/WealthOS
 # API Keys
 AKSHARE_TOKEN=your_akshare_token
 OPENAI_API_KEY=your_openai_api_key

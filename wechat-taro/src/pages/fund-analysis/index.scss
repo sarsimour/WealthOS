@@ -1,0 +1,305 @@
+.fund-analysis-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+// Header Section
+.header {
+  padding: 40rpx 30rpx 30rpx;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+
+  .title {
+    font-size: 36rpx;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10rpx;
+  }
+
+  .subtitle {
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+// Loading Container
+.loading-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .loading-text {
+    color: white;
+    font-size: 32rpx;
+    text-align: center;
+  }
+}
+
+// Upload Section
+.upload-section {
+  padding: 40rpx 30rpx;
+  text-align: center;
+
+  .upload-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    border-radius: 50rpx;
+    color: white;
+    font-size: 32rpx;
+    font-weight: bold;
+    padding: 24rpx 60rpx;
+    box-shadow: 0 10rpx 30rpx rgba(79, 172, 254, 0.3);
+    transition: all 0.3s ease;
+
+    &:not([disabled]):active {
+      transform: translateY(2rpx);
+      box-shadow: 0 8rpx 25rpx rgba(79, 172, 254, 0.4);
+    }
+
+    &[disabled] {
+      background: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.6);
+      box-shadow: none;
+    }
+  }
+
+  .upload-tip {
+    display: block;
+    margin-top: 20rpx;
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+  }
+}
+
+// Chat Container
+.chat-container {
+  flex: 1;
+  background: white;
+  margin: 0 20rpx;
+  border-radius: 30rpx 30rpx 0 0;
+  padding: 30rpx 0;
+  min-height: 500rpx;
+  position: relative;
+}
+
+// Empty State
+.empty-state {
+  padding: 100rpx 40rpx;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 80rpx;
+    margin-bottom: 30rpx;
+    display: block;
+  }
+
+  .empty-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20rpx;
+  }
+
+  .empty-desc {
+    font-size: 28rpx;
+    color: #666;
+    line-height: 1.5;
+    max-width: 500rpx;
+    margin: 0 auto;
+  }
+}
+
+// Chat Messages
+.chat-messages {
+  padding: 0 30rpx;
+  max-height: 600rpx;
+  overflow-y: auto;
+}
+
+.message {
+  margin-bottom: 30rpx;
+  display: flex;
+  flex-direction: column;
+
+  &.user {
+    align-items: flex-end;
+
+    .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 24rpx 24rpx 8rpx 24rpx;
+      max-width: 70%;
+    }
+
+    .message-time {
+      text-align: right;
+      margin-top: 8rpx;
+    }
+  }
+
+  &.assistant {
+    align-items: flex-start;
+
+    .message-content {
+      background: #f5f7fa;
+      color: #333;
+      border-radius: 24rpx 24rpx 24rpx 8rpx;
+      max-width: 80%;
+      border: 1px solid #e8ecf0;
+    }
+
+    .message-time {
+      text-align: left;
+      margin-top: 8rpx;
+    }
+  }
+}
+
+.message-content {
+  padding: 24rpx 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.message-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.message-image {
+  width: 100%;
+  max-width: 400rpx;
+  height: auto;
+  border-radius: 16rpx;
+  display: block;
+}
+
+.message-time {
+  font-size: 20rpx;
+  color: #999;
+  margin: 0 20rpx;
+}
+
+// Typing Indicator
+.typing-indicator {
+  font-size: 28rpx;
+  color: #666;
+  font-style: italic;
+  
+  &::after {
+    content: '...';
+    animation: typing 1.5s infinite;
+  }
+}
+
+@keyframes typing {
+  0%, 60% {
+    content: '...';
+  }
+  30% {
+    content: '.';
+  }
+  60% {
+    content: '..';
+  }
+}
+
+// Chat Actions
+.chat-actions {
+  padding: 20rpx 30rpx;
+  text-align: center;
+  background: white;
+
+  .clear-btn {
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    border-radius: 20rpx;
+    font-size: 24rpx;
+    padding: 16rpx 32rpx;
+
+    &:active {
+      background: rgba(255, 59, 48, 0.2);
+    }
+  }
+}
+
+// Responsive Design
+@media screen and (max-width: 600rpx) {
+  .header {
+    padding: 30rpx 20rpx 20rpx;
+
+    .title {
+      font-size: 32rpx;
+    }
+
+    .subtitle {
+      font-size: 22rpx;
+    }
+  }
+
+  .upload-section {
+    padding: 30rpx 20rpx;
+
+    .upload-btn {
+      font-size: 28rpx;
+      padding: 20rpx 50rpx;
+    }
+
+    .upload-tip {
+      font-size: 22rpx;
+    }
+  }
+
+  .chat-container {
+    margin: 0 10rpx;
+    padding: 20rpx 0;
+  }
+
+  .chat-messages {
+    padding: 0 20rpx;
+  }
+
+  .message-content {
+    padding: 20rpx 24rpx;
+  }
+
+  .message-text {
+    font-size: 26rpx;
+  }
+}
+
+// Dark mode support (optional)
+@media (prefers-color-scheme: dark) {
+  .fund-analysis-page {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  }
+
+  .chat-container {
+    background: #1a1a1a;
+    color: white;
+  }
+
+  .empty-title {
+    color: #fff;
+  }
+
+  .empty-desc {
+    color: #ccc;
+  }
+
+  .message.assistant .message-content {
+    background: #333;
+    color: #fff;
+    border-color: #555;
+  }
+
+  .chat-actions {
+    background: #1a1a1a;
+  }
+} 

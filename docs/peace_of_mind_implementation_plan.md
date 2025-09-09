@@ -531,7 +531,7 @@ services:
   backend:
     build: ./backend
     environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/wealthos
+      - DATABASE_URL=postgresql://user:pass@db:5434/wealthos
       - REDIS_URL=redis://redis:6379
     depends_on:
       - db

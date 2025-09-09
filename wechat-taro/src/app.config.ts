@@ -3,6 +3,7 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/market/index',
     'pages/portfolio/index',
+    'pages/fund-analysis/index',
     'pages/profile/index'
   ],
   window: {
@@ -29,6 +30,10 @@ export default defineAppConfig({
       {
         pagePath: 'pages/portfolio/index',
         text: '组合'
+      },
+      {
+        pagePath: 'pages/fund-analysis/index',
+        text: '基金分析'
       },
       {
         pagePath: 'pages/profile/index',
