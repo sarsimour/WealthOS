@@ -33,7 +33,7 @@ export interface LoginResponse {
 }
 
 export interface MessageContent {
-  content_type: 'text' | 'image' | 'audio' | 'video' | 'file'
+  content_type: 'text' | 'image' | 'audio' | 'video' | 'file' | 'image_url'
   content: string
   meta_info?: Record<string, string>
   order: number
@@ -76,12 +76,6 @@ export interface StreamEvent {
   }
 }
 
-export interface MessageContent {
-  content_type: 'text' | 'image' | 'image_url'
-  content: string
-  order: number
-  meta_info?: Record<string, string>
-}
 
 export interface ChatHistoryMessage {
   id: string
