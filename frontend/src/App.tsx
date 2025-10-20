@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import BitcoinChart from './components/BitcoinChart'
 import FundAnalysis from './components/FundAnalysis'
+import FundAdvisorDashboard from './components/fundAdvisor/FundAdvisorDashboard'
+import InvestmentSimulator from './components/InvestmentSimulator' 
 import ErrorBoundary from './components/ErrorBoundary'
 
 const queryClient = new QueryClient()
@@ -42,7 +44,7 @@ function App() {
           {/* Main Content */}
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-lg border border-slate-200/60">
+              <TabsList className="grid w-full grid-cols-7 bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-lg border border-slate-200/60">
                 <TabsTrigger 
                 value="dashboard" 
                 className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
@@ -64,6 +66,20 @@ function App() {
                 <span className="text-lg">💼</span>
                 <span className="font-semibold">Portfolio</span>
               </TabsTrigger>
+              <TabsTrigger 
+                value="fund-advisor" 
+                className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
+              >
+                <span className="text-lg">🎯</span>
+                <span className="font-semibold">Fund Advisor</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                  value="investment-simulator" 
+                  className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
+                >
+                  <span className="text-lg">⏳</span>
+                  <span className="font-semibold">Simulator</span>
+                </TabsTrigger>
               <TabsTrigger 
                 value="fund-analysis" 
                 className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 rounded-xl"
@@ -163,6 +179,14 @@ function App() {
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="fund-advisor" className="space-y-8">
+                <FundAdvisorDashboard />
+              </TabsContent>
+
+              <TabsContent value="investment-simulator" className="space-y-8">
+                <InvestmentSimulator />
               </TabsContent>
 
               <TabsContent value="fund-analysis" className="space-y-8">
