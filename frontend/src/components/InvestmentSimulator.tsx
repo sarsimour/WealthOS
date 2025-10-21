@@ -31,6 +31,7 @@ interface TimeSeriesDataPoint {
   asset_value: number;
   profit: number;
   profit_rate: number;
+  close: number; // Add close price
 }
 
 interface SimulationAPIResponse {
@@ -40,7 +41,7 @@ interface SimulationAPIResponse {
 
 interface MetricCardProps {
   title: string;
-  value: number;
+  value: string | number;
   prefix?: string;
   suffix?: string;
   color: {
@@ -78,17 +79,21 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, prefix = '', suff
       <h3 className={`font-semibold ${color.title}`}>{title}</h3>
     </div>
     <div className={`text-4xl font-bold ${color.text}`}>
-      <CountUp
-        start={0}
-        end={value || 0}
-        duration={1.5}
-        separator=","
-        decimals={suffix === '%' ? 2 : 0}
-        decimal="."
-        prefix={prefix}
-        suffix={suffix}
-        preserveValue
-      />
+      {typeof value === 'number' ? (
+        <CountUp
+          start={0}
+          end={value || 0}
+          duration={1.5}
+          separator=","
+          decimals={suffix === '%' ? 2 : 0}
+          decimal="."
+          prefix={prefix}
+          suffix={suffix}
+          preserveValue
+        />
+      ) : (
+        <span>{value}</span>
+      )}
     </div>
   </motion.div>
 );
@@ -129,16 +134,18 @@ const InvestmentSimulator: React.FC = () => {
   // --- Animation Logic ---
   const startAnimation = (data: SimulationAPIResponse | null) => {
     if (!data) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setAnimationState(prev => ({ ...prev, playing: true, currentIndex: 0 }));
-    
+    if (intervalRef.current) clearInterval(intervalRef.current); // Clear any existing interval
+
+    setAnimationState(prev => ({ ...prev, playing: true })); // Just set playing to true
+
     intervalRef.current = setInterval(() => {
       setAnimationState(prev => {
-        if (prev.currentIndex >= data.time_series.length - 1) {
+        const nextIndex = prev.currentIndex + 1;
+        if (nextIndex >= data.time_series.length) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           return { ...prev, playing: false };
         }
-        return { ...prev, currentIndex: prev.currentIndex + 1 };
+        return { ...prev, currentIndex: nextIndex };
       });
     }, animationState.speed);
   };
@@ -181,15 +188,36 @@ const InvestmentSimulator: React.FC = () => {
     
     const animatedData = simulationData.time_series.slice(0, animationState.currentIndex + 1);
     
+    // Calculate normalized asset price
+    let normalizedAssetPrice: number[] = [];
+    if (animatedData.length > 0) {
+      const initialClosePrice = animatedData[0].close;
+      normalizedAssetPrice = animatedData.map(d => ((d.close - initialClosePrice) / initialClosePrice) * 100); // Percentage return
+    }
+
     return {
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-      legend: { data: ['Total Investment', 'Asset Value'], bottom: 10 },
+      legend: { data: ['Total Investment', 'Asset Value', 'Asset Return'], bottom: 10 }, // Add 'Asset Return' to legend
       grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: animatedData.map(d => d.date) },
-      yAxis: { type: 'value', axisLabel: { formatter: '¥{value}' } },
+      yAxis: [ // Use an array for multiple y-axes if needed, or just one for now
+        {
+          type: 'value',
+          name: 'Value (¥)',
+          position: 'left',
+          axisLabel: { formatter: '¥{value}' }
+        },
+        {
+          type: 'value',
+          name: 'Return (%)',
+          position: 'right',
+          axisLabel: { formatter: '{value}%' }
+        }
+      ],
       series: [
-        { name: 'Total Investment', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.total_investment), lineStyle: { color: '#3b82f6' }, areaStyle: { color: 'rgba(59, 130, 246, 0.1)' } },
-        { name: 'Asset Value', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.asset_value), lineStyle: { color: '#10b981' }, areaStyle: { color: 'rgba(16, 185, 129, 0.2)' } }
+        { name: 'Total Investment', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.total_investment), lineStyle: { color: '#3b82f6' }, areaStyle: { color: 'rgba(59, 130, 246, 0.1)' }, yAxisIndex: 0 },
+        { name: 'Asset Value', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.asset_value), lineStyle: { color: '#10b981' }, areaStyle: { color: 'rgba(16, 185, 129, 0.2)' }, yAxisIndex: 0 },
+        { name: 'Asset Return', type: 'line', smooth: true, showSymbol: false, data: normalizedAssetPrice, lineStyle: { color: '#f59e0b' }, yAxisIndex: 1 } // New series
       ],
       animation: false
     };
@@ -198,6 +226,11 @@ const InvestmentSimulator: React.FC = () => {
   // --- Derived Data for Display ---
   const currentDisplayData = simulationData ? simulationData.time_series[animationState.currentIndex] : null;
   const finalSummary = simulationData ? simulationData.summary : null;
+
+  // Calculate Asset Buy & Hold Return Rate for summary
+  const assetBuyHoldReturnRate = simulationData && simulationData.time_series.length > 1
+    ? ((simulationData.time_series[simulationData.time_series.length - 1].close - simulationData.time_series[0].close) / simulationData.time_series[0].close) * 100
+    : 0;
 
   return (
     <div className="space-y-8">
@@ -260,7 +293,7 @@ const InvestmentSimulator: React.FC = () => {
             exit={{ opacity: 0 }}
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <MetricCard title="Current Date" value={Date.parse(currentDisplayData.date)} color={{bg: 'from-slate-50 to-slate-100', border: 'border-slate-200', text: 'text-slate-800', title: 'text-slate-600'}} icon={<Calendar />} />
+              <MetricCard title="Current Date" value={currentDisplayData.date} color={{bg: 'from-slate-50 to-slate-100', border: 'border-slate-200', text: 'text-slate-800', title: 'text-slate-600'}} icon={<Calendar />} />
               <MetricCard title="Total Investment" value={currentDisplayData.total_investment} prefix="¥" color={{bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', text: 'text-blue-800', title: 'text-blue-600'}} icon={<DollarSign />} />
               <MetricCard title="Asset Value" value={currentDisplayData.asset_value} prefix="¥" color={{bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200', text: 'text-emerald-800', title: 'text-emerald-600'}} icon={<BarChart />} />
               <MetricCard title="Profit Rate" value={currentDisplayData.profit_rate * 100} suffix="%" color={{bg: 'from-orange-50 to-orange-100', border: 'border-orange-200', text: 'text-orange-800', title: 'text-orange-600'}} icon={<Zap />} />
@@ -273,7 +306,16 @@ const InvestmentSimulator: React.FC = () => {
                   {animationState.playing ? (
                     <button onClick={pauseAnimation} className="p-2 bg-slate-200 rounded-full hover:bg-slate-300 transition"><Pause size={16}/></button>
                   ) : (
-                    <button onClick={() => startAnimation(simulationData)} disabled={animationState.currentIndex >= simulationData.time_series.length -1} className="p-2 bg-slate-200 rounded-full hover:bg-slate-300 transition disabled:opacity-50"><Play size={16}/></button>
+                    <button 
+                      onClick={() => {
+                        if (simulationData && animationState.currentIndex >= simulationData.time_series.length - 1) {
+                          resetAnimation(); // If at end, reset before playing
+                        }
+                        startAnimation(simulationData);
+                      }} 
+                      disabled={simulationData === null} // Disable if no data
+                      className="p-2 bg-slate-200 rounded-full hover:bg-slate-300 transition disabled:opacity-50"
+                    ><Play size={16}/></button>
                   )}
                   <button onClick={resetAnimation} className="p-2 bg-slate-200 rounded-full hover:bg-slate-300 transition"><RefreshCw size={16}/></button>
                 </div>
@@ -304,6 +346,13 @@ const InvestmentSimulator: React.FC = () => {
                     <div>
                       <p className="text-sm text-slate-500">Period (Days)</p>
                       <p className="text-2xl font-semibold text-slate-600">{finalSummary.simulation_period_days}</p>
+                    </div>
+                    {/* New MetricCard for Asset Buy & Hold Return Rate */}
+                    <div>
+                      <p className="text-sm text-slate-500">Asset Buy & Hold Return</p>
+                      <p className={`text-2xl font-semibold ${assetBuyHoldReturnRate >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {assetBuyHoldReturnRate.toFixed(2)}%
+                      </p>
                     </div>
                   </div>
                 </motion.div>
