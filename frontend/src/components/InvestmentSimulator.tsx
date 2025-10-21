@@ -23,6 +23,7 @@ interface SimulationSummary {
   simulation_period_days: number;
   worst_profit_rate: number;
   max_drawdown: number;
+  overall_asset_return_rate: number; // Add overall asset return rate
 }
 
 interface TimeSeriesDataPoint {
@@ -31,7 +32,8 @@ interface TimeSeriesDataPoint {
   asset_value: number;
   profit: number;
   profit_rate: number;
-  close: number; // Add close price
+  close: number;
+  asset_return_rate: number; // Add asset return rate
 }
 
 interface SimulationAPIResponse {
@@ -124,6 +126,7 @@ const InvestmentSimulator: React.FC = () => {
     onSuccess: (data) => {
       setSimulationData(data);
       startAnimation(data);
+      console.log("Simulation Data:", data); // <--- ADD THIS LINE
     },
     onError: (error) => {
       console.error("Simulation failed:", error);
@@ -188,16 +191,12 @@ const InvestmentSimulator: React.FC = () => {
     
     const animatedData = simulationData.time_series.slice(0, animationState.currentIndex + 1);
     
-    // Calculate normalized asset price
-    let normalizedAssetPrice: number[] = [];
-    if (animatedData.length > 0) {
-      const initialClosePrice = animatedData[0].close;
-      normalizedAssetPrice = animatedData.map(d => ((d.close - initialClosePrice) / initialClosePrice) * 100); // Percentage return
-    }
+    // Ensure animatedData is not empty before proceeding with calculations that rely on its elements
+    if (animatedData.length === 0) return {}; // Return empty options if no data to animate
 
     return {
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-      legend: { data: ['Total Investment', 'Asset Value', 'Asset Return'], bottom: 10 }, // Add 'Asset Return' to legend
+      legend: { data: ['Total Investment', 'Asset Value', 'Buy & Hold Return'], bottom: 10 }, // Add 'Asset Return' to legend
       grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: animatedData.map(d => d.date) },
       yAxis: [ // Use an array for multiple y-axes if needed, or just one for now
@@ -216,8 +215,8 @@ const InvestmentSimulator: React.FC = () => {
       ],
       series: [
         { name: 'Total Investment', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.total_investment), lineStyle: { color: '#3b82f6' }, areaStyle: { color: 'rgba(59, 130, 246, 0.1)' }, yAxisIndex: 0 },
-        { name: 'Asset Value', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.asset_value), lineStyle: { color: '#10b981' }, areaStyle: { color: 'rgba(16, 185, 129, 0.2)' }, yAxisIndex: 0 },
-        { name: 'Asset Return', type: 'line', smooth: true, showSymbol: false, data: normalizedAssetPrice, lineStyle: { color: '#f59e0b' }, yAxisIndex: 1 } // New series
+        { name: 'Asset Value', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.asset_value.toFixed(2)), lineStyle: { color: '#10b981' }, areaStyle: { color: 'rgba(16, 185, 129, 0.2)' }, yAxisIndex: 0 },
+        { name: 'Buy & Hold Return', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => (d.asset_return_rate*100).toFixed(2) + '%'), lineStyle: { color: '#f59e0b' }, yAxisIndex: 1 } // Use asset_return_rate from backend
       ],
       animation: false
     };
@@ -226,11 +225,6 @@ const InvestmentSimulator: React.FC = () => {
   // --- Derived Data for Display ---
   const currentDisplayData = simulationData ? simulationData.time_series[animationState.currentIndex] : null;
   const finalSummary = simulationData ? simulationData.summary : null;
-
-  // Calculate Asset Buy & Hold Return Rate for summary
-  const assetBuyHoldReturnRate = simulationData && simulationData.time_series.length > 1
-    ? ((simulationData.time_series[simulationData.time_series.length - 1].close - simulationData.time_series[0].close) / simulationData.time_series[0].close) * 100
-    : 0;
 
   return (
     <div className="space-y-8">
@@ -297,6 +291,7 @@ const InvestmentSimulator: React.FC = () => {
               <MetricCard title="Total Investment" value={currentDisplayData.total_investment} prefix="¥" color={{bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', text: 'text-blue-800', title: 'text-blue-600'}} icon={<DollarSign />} />
               <MetricCard title="Asset Value" value={currentDisplayData.asset_value} prefix="¥" color={{bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200', text: 'text-emerald-800', title: 'text-emerald-600'}} icon={<BarChart />} />
               <MetricCard title="Profit Rate" value={currentDisplayData.profit_rate * 100} suffix="%" color={{bg: 'from-orange-50 to-orange-100', border: 'border-orange-200', text: 'text-orange-800', title: 'text-orange-600'}} icon={<Zap />} />
+              <MetricCard title="Asset Return" value={currentDisplayData.asset_return_rate * 100} suffix="%" color={{bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', text: 'text-purple-800', title: 'text-purple-600'}} icon={<BarChart />} />
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/60">
@@ -350,8 +345,8 @@ const InvestmentSimulator: React.FC = () => {
                     {/* New MetricCard for Asset Buy & Hold Return Rate */}
                     <div>
                       <p className="text-sm text-slate-500">Asset Buy & Hold Return</p>
-                      <p className={`text-2xl font-semibold ${assetBuyHoldReturnRate >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {assetBuyHoldReturnRate.toFixed(2)}%
+                      <p className={`text-2xl font-semibold ${finalSummary.overall_asset_return_rate >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {(finalSummary.overall_asset_return_rate * 100).toFixed(2)}%
                       </p>
                     </div>
                   </div>
