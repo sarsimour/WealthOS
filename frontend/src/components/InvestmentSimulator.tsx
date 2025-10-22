@@ -196,7 +196,7 @@ const InvestmentSimulator: React.FC = () => {
 
     return {
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-      legend: { data: ['Total Investment', 'Asset Value', 'Buy & Hold Return'], bottom: 10 }, // Add 'Asset Return' to legend
+      legend: { data: ['Total Investment', 'Asset Value', 'Buy & Hold Return'], bottom: 10 }, // Use 'Buy & Hold Return'
       grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: animatedData.map(d => d.date) },
       yAxis: [ // Use an array for multiple y-axes if needed, or just one for now
@@ -216,7 +216,7 @@ const InvestmentSimulator: React.FC = () => {
       series: [
         { name: 'Total Investment', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.total_investment), lineStyle: { color: '#3b82f6' }, areaStyle: { color: 'rgba(59, 130, 246, 0.1)' }, yAxisIndex: 0 },
         { name: 'Asset Value', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => d.asset_value.toFixed(2)), lineStyle: { color: '#10b981' }, areaStyle: { color: 'rgba(16, 185, 129, 0.2)' }, yAxisIndex: 0 },
-        { name: 'Buy & Hold Return', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => (d.asset_return_rate*100).toFixed(2) + '%'), lineStyle: { color: '#f59e0b' }, yAxisIndex: 1 } // Use asset_return_rate from backend
+        { name: 'Buy & Hold Return', type: 'line', smooth: true, showSymbol: false, data: animatedData.map(d => (d.asset_return_rate*100).toFixed(2) + '%'), lineStyle: { color: '#f59e0b' }, yAxisIndex: 1 } // Use asset_return_rate from backend directly
       ],
       animation: false
     };
@@ -291,7 +291,7 @@ const InvestmentSimulator: React.FC = () => {
               <MetricCard title="Total Investment" value={currentDisplayData.total_investment} prefix="¥" color={{bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', text: 'text-blue-800', title: 'text-blue-600'}} icon={<DollarSign />} />
               <MetricCard title="Asset Value" value={currentDisplayData.asset_value} prefix="¥" color={{bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200', text: 'text-emerald-800', title: 'text-emerald-600'}} icon={<BarChart />} />
               <MetricCard title="Profit Rate" value={currentDisplayData.profit_rate * 100} suffix="%" color={{bg: 'from-orange-50 to-orange-100', border: 'border-orange-200', text: 'text-orange-800', title: 'text-orange-600'}} icon={<Zap />} />
-              <MetricCard title="Asset Return" value={currentDisplayData.asset_return_rate * 100} suffix="%" color={{bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', text: 'text-purple-800', title: 'text-purple-600'}} icon={<BarChart />} />
+              <MetricCard title="Buy & Hold Return" value={currentDisplayData.asset_return_rate * 100} suffix="%" color={{bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', text: 'text-purple-800', title: 'text-purple-600'}} icon={<BarChart />} />
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/60">
